@@ -2,6 +2,12 @@
 
 use App\Http\Controllers\Api\Admin\DashboardController as AdminDashboardController;
 use App\Http\Controllers\Api\AuthController;
+use App\Http\Controllers\Api\Candidate\AccountController;
+use App\Http\Controllers\Api\Candidate\DocumentController;
+use App\Http\Controllers\Api\Candidate\EducationController;
+use App\Http\Controllers\Api\Candidate\ExperienceController;
+use App\Http\Controllers\Api\Candidate\ProfileController;
+use App\Http\Controllers\Api\Candidate\SelectionsController;
 use App\Http\Controllers\Api\OnboardingController;
 use App\Http\Controllers\Api\Public\LookupController;
 use Illuminate\Support\Facades\Route;
@@ -27,5 +33,34 @@ Route::middleware(['auth:sanctum', 'throttle:api'])->group(function () {
 
     Route::prefix('admin')->middleware('role:admin')->group(function () {
         Route::get('dashboard', AdminDashboardController::class);
+    });
+
+    Route::prefix('candidate')->middleware('role:candidate')->group(function () {
+        Route::get('profile', [ProfileController::class, 'show']);
+        Route::patch('profile', [ProfileController::class, 'update']);
+
+        Route::post('profile/educations', [EducationController::class, 'store']);
+        Route::patch('profile/educations/{education}', [EducationController::class, 'update']);
+        Route::delete('profile/educations/{education}', [EducationController::class, 'destroy']);
+
+        Route::post('profile/experiences', [ExperienceController::class, 'store']);
+        Route::patch('profile/experiences/{experience}', [ExperienceController::class, 'update']);
+        Route::delete('profile/experiences/{experience}', [ExperienceController::class, 'destroy']);
+
+        Route::put('profile/skills', [SelectionsController::class, 'syncSkills']);
+        Route::put('profile/languages', [SelectionsController::class, 'syncLanguages']);
+        Route::put('profile/preferred-categories', [SelectionsController::class, 'syncPreferredCategories']);
+        Route::put('profile/preferred-countries', [SelectionsController::class, 'syncPreferredCountries']);
+
+        Route::get('profile/completeness', [ProfileController::class, 'completeness']);
+
+        Route::get('documents', [DocumentController::class, 'index']);
+        Route::post('documents', [DocumentController::class, 'store'])->middleware('throttle:uploads');
+        Route::patch('documents/reorder', [DocumentController::class, 'reorder'])->middleware('throttle:uploads');
+        Route::post('documents/{document}', [DocumentController::class, 'update'])->middleware('throttle:uploads');
+        Route::delete('documents/{document}', [DocumentController::class, 'destroy']);
+        Route::get('documents/{document}/download', [DocumentController::class, 'download'])->middleware('throttle:downloads');
+
+        Route::delete('account', [AccountController::class, 'destroy']);
     });
 });
