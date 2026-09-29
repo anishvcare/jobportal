@@ -86,7 +86,8 @@ return new class extends Migration
             $table->foreignId('job_category_id')->constrained()->cascadeOnDelete(); // a trade child
             $table->timestamps();
 
-            $table->unique(['candidate_profile_id', 'job_category_id']);
+            // Explicit short name: the auto-generated name exceeds MySQL's 64-char identifier limit.
+            $table->unique(['candidate_profile_id', 'job_category_id'], 'cand_pref_category_unique');
         });
 
         Schema::create('candidate_preferred_country', function (Blueprint $table) {
@@ -95,7 +96,8 @@ return new class extends Migration
             $table->foreignId('country_id')->constrained()->cascadeOnDelete();
             $table->timestamps();
 
-            $table->unique(['candidate_profile_id', 'country_id']);
+            // Explicit short name for consistency and to stay within MySQL's 64-char limit.
+            $table->unique(['candidate_profile_id', 'country_id'], 'cand_pref_country_unique');
         });
 
         Schema::create('documents', function (Blueprint $table) {
