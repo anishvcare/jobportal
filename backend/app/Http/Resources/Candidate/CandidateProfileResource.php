@@ -4,6 +4,7 @@ namespace App\Http\Resources\Candidate;
 
 use App\Models\CandidateProfile;
 use App\Models\Language;
+use App\Services\Documents\CompletenessService;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
@@ -58,6 +59,10 @@ class CandidateProfileResource extends JsonResource
             'preferred_countries' => $this->whenLoaded('preferredCountries', fn () => $this->preferredCountries
                 ->map(fn ($country) => ['id' => $country->id, 'name' => $country->name])
                 ->values()),
+            'documents' => DocumentResource::collection(
+                $this->whenLoaded('documents')
+            ),
+            'completeness' => app(CompletenessService::class)->compute($this->resource),
         ];
     }
 }

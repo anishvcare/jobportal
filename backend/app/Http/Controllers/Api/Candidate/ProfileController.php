@@ -6,6 +6,8 @@ use App\Http\Controllers\Api\Candidate\Concerns\ResolvesCandidateProfile;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Candidate\UpdateProfileRequest;
 use App\Http\Resources\Candidate\CandidateProfileResource;
+use App\Services\Documents\CompletenessService;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
 class ProfileController extends Controller
@@ -20,6 +22,19 @@ class ProfileController extends Controller
         $profile->load($this->profileRelations());
 
         return new CandidateProfileResource($profile);
+    }
+
+    /**
+     * Dedicated completeness indicator for the profile wizard UI.
+     */
+    public function completeness(Request $request, CompletenessService $service): JsonResponse
+    {
+        $profile = $this->resolveProfile($request);
+        $this->authorize('view', $profile);
+
+        $profile->load('documents');
+
+        return response()->json(['data' => $service->compute($profile)]);
     }
 
     public function update(UpdateProfileRequest $request): CandidateProfileResource

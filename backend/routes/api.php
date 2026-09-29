@@ -3,6 +3,7 @@
 use App\Http\Controllers\Api\Admin\DashboardController as AdminDashboardController;
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\Candidate\AccountController;
+use App\Http\Controllers\Api\Candidate\DocumentController;
 use App\Http\Controllers\Api\Candidate\EducationController;
 use App\Http\Controllers\Api\Candidate\ExperienceController;
 use App\Http\Controllers\Api\Candidate\ProfileController;
@@ -50,6 +51,15 @@ Route::middleware(['auth:sanctum', 'throttle:api'])->group(function () {
         Route::put('profile/languages', [SelectionsController::class, 'syncLanguages']);
         Route::put('profile/preferred-categories', [SelectionsController::class, 'syncPreferredCategories']);
         Route::put('profile/preferred-countries', [SelectionsController::class, 'syncPreferredCountries']);
+
+        Route::get('profile/completeness', [ProfileController::class, 'completeness']);
+
+        Route::get('documents', [DocumentController::class, 'index']);
+        Route::post('documents', [DocumentController::class, 'store'])->middleware('throttle:uploads');
+        Route::patch('documents/reorder', [DocumentController::class, 'reorder']);
+        Route::post('documents/{document}', [DocumentController::class, 'update'])->middleware('throttle:uploads');
+        Route::delete('documents/{document}', [DocumentController::class, 'destroy']);
+        Route::get('documents/{document}/download', [DocumentController::class, 'download'])->middleware('throttle:downloads');
 
         Route::delete('account', [AccountController::class, 'destroy']);
     });

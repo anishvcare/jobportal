@@ -42,6 +42,7 @@ trait ResolvesCandidateProfile
             'languages',
             'preferredCategories',
             'preferredCountries',
+            'documents' => fn ($query) => $query->orderBy('type')->orderBy('sort_order')->orderBy('id'),
         ];
     }
 }

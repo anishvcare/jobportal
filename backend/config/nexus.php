@@ -27,4 +27,10 @@ return [
     */
     'consent_version' => (string) env('CONSENT_VERSION', '1.0'),
 
+    /*
+    | Path to the qpdf binary used to inspect uploaded PDFs (encryption
+    | status and page count). Defaults to the binary on the system PATH.
+    */
+    'qpdf_path' => env('QPDF_PATH', 'qpdf'),
+
 ];
