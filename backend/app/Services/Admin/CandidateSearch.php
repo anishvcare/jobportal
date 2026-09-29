@@ -106,17 +106,15 @@ class CandidateSearch
             return;
         }
 
-        if (DB::connection()->getDriverName() === 'mysql') {
-            // MySQL: use the FULLTEXT index on full_name, OR-ed with a skill match.
-            $query->where(function (Builder $q) use ($keyword) {
-                $q->whereRaw('MATCH(full_name) AGAINST (? IN BOOLEAN MODE)', [$keyword.'*'])
-                    ->orWhereHas('skills', fn (Builder $s) => $s->where('name', 'like', "%{$keyword}%"));
-            });
-
-            return;
-        }
-
-        // SQLite (and any non-MySQL driver): portable LIKE fallback.
+        // Portable LIKE match on name OR a related skill name, on every driver.
+        //
+        // We deliberately do NOT use the MySQL FULLTEXT index here: InnoDB
+        // FULLTEXT is updated asynchronously and does not reflect rows written
+        // in the same uncommitted transaction, which makes results unreliable
+        // (notably under test transactions and immediately after a write). A
+        // FULLTEXT(full_name) index still exists for future ranked search, but
+        // correctness of this filter comes first. full_name is indexed, and the
+        // candidate table is expected to stay in the tens of thousands.
         $query->where(function (Builder $q) use ($keyword) {
             $q->where('full_name', 'like', "%{$keyword}%")
                 ->orWhereHas('skills', fn (Builder $s) => $s->where('name', 'like', "%{$keyword}%"));
