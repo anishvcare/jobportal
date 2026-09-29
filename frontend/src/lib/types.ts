@@ -139,6 +139,152 @@ export interface Completeness {
   pack_ready: boolean;
 }
 
+/* ------------------------------------------------------------------ *
+ * Admin (Milestone 4): candidate search, detail, bulk export, audits *
+ * ------------------------------------------------------------------ */
+
+/** Generic pagination meta returned alongside admin list endpoints. */
+export interface PaginationMeta {
+  current_page: number;
+  last_page: number;
+  per_page: number;
+  total: number;
+}
+
+/** One row in the admin candidate search results. */
+export interface CandidateSummary {
+  id: number;
+  full_name: string | null;
+  age: number | null;
+  gender: Gender | null;
+  district: string | null;
+  trades: string[];
+  experience_years: number;
+  completeness: number;
+  has_passport: boolean;
+  passport_valid: boolean;
+  /** Relative API path (e.g. "/api/admin/candidates/12/photo") or null. */
+  photo_url: string | null;
+}
+
+/** A per-trade count over the whole filtered result set. */
+export interface TradeCount {
+  trade_id: number;
+  trade_name: string;
+  count: number;
+}
+
+/** Meta returned by GET /admin/candidates: pagination + per-trade counts. */
+export interface CandidateSearchMeta extends PaginationMeta {
+  trade_counts: TradeCount[];
+}
+
+export interface AdminNamedRef {
+  id: number;
+  name: string;
+}
+
+export interface AdminEducation {
+  id: number;
+  institution: string | null;
+  field_of_study: string | null;
+  year_completed: number | null;
+  education_level: (AdminNamedRef & { rank: number }) | null;
+}
+
+export interface AdminExperience {
+  id: number;
+  job_title: string;
+  company: string | null;
+  start_date: string | null;
+  end_date: string | null;
+  is_current: boolean;
+  job_category: AdminNamedRef | null;
+}
+
+export interface AdminProfileLanguage {
+  id: number;
+  name: string;
+  code: string;
+  proficiency: LanguageProficiency | null;
+}
+
+export interface AdminDocument {
+  id: number;
+  type: DocumentType;
+  original_name: string;
+  mime: string;
+  size: number;
+  page_count: number | null;
+  /** Relative API path for the admin document download route. */
+  download_url: string;
+}
+
+/** Full candidate detail for the admin candidate page. */
+export interface AdminCandidateDetail {
+  id: number;
+  full_name: string | null;
+  dob: string | null;
+  age: number | null;
+  gender: Gender | null;
+  phone: string | null;
+  whatsapp: string | null;
+  address: string | null;
+  city: string | null;
+  pincode: string | null;
+  summary: string | null;
+  user: { id: number; name: string; email: string } | null;
+  country: AdminNamedRef | null;
+  state: AdminNamedRef | null;
+  district: AdminNamedRef | null;
+  has_passport: boolean;
+  /** Decrypted by the backend (admin is authorized). */
+  passport_number: string | null;
+  passport_expiry: string | null;
+  passport_valid: boolean;
+  educations: AdminEducation[];
+  experiences: AdminExperience[];
+  skills: ProfileSkill[];
+  languages: AdminProfileLanguage[];
+  preferred_categories: AdminNamedRef[];
+  preferred_countries: AdminNamedRef[];
+  documents: AdminDocument[];
+  photo_url: string | null;
+  completeness: Completeness;
+}
+
+export type BulkExportStatus = "queued" | "processing" | "ready" | "failed";
+
+/** A bulk ZIP export row the admin UI polls. */
+export interface BulkExport {
+  id: number;
+  status: BulkExportStatus;
+  progress: number;
+  candidate_count: number;
+  ready: boolean;
+  expires_at: string | null;
+  error: string | null;
+  created_at: string | null;
+  /** Relative API path for the ZIP; null until ready. */
+  download_url: string | null;
+}
+
+export type DownloadAuditKind = "document" | "resume" | "pack" | "bulk_zip";
+
+/** A single download-audit row. */
+export interface DownloadAudit {
+  id: number;
+  actor: { id: number; name: string; email: string } | null;
+  candidate_profile_id: number | null;
+  /** null when the candidate was hard-deleted or the row is a bulk row. */
+  candidate_name: string | null;
+  kind: DownloadAuditKind;
+  bulk_export_id: number | null;
+  document_id: number | null;
+  ip: string | null;
+  created_at: string | null;
+}
+
 export interface CandidateProfile {
   id: number;
   full_name: string | null;

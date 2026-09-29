@@ -1,6 +1,10 @@
 <?php
 
+use App\Http\Controllers\Api\Admin\CandidateController as AdminCandidateController;
+use App\Http\Controllers\Api\Admin\CandidateDownloadController as AdminCandidateDownloadController;
+use App\Http\Controllers\Api\Admin\CandidateExportController as AdminCandidateExportController;
 use App\Http\Controllers\Api\Admin\DashboardController as AdminDashboardController;
+use App\Http\Controllers\Api\Admin\DownloadAuditController as AdminDownloadAuditController;
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\Candidate\AccountController;
 use App\Http\Controllers\Api\Candidate\DocumentController;
@@ -34,6 +38,32 @@ Route::middleware(['auth:sanctum', 'throttle:api'])->group(function () {
 
     Route::prefix('admin')->middleware('role:admin')->group(function () {
         Route::get('dashboard', AdminDashboardController::class);
+
+        // {profile} binds to CandidateProfile via the controller type hints.
+        Route::get('candidates', [AdminCandidateController::class, 'index']);
+        Route::get('candidates/{profile}', [AdminCandidateController::class, 'show']);
+        // A photo thumbnail is a VIEW, not a file download; it uses the
+        // higher-limit 'thumbnails' limiter so a full results page (up to 100
+        // thumbnails) does not exhaust the download budget mid-render.
+        Route::get('candidates/{profile}/photo', [AdminCandidateController::class, 'photo'])
+            ->middleware('throttle:thumbnails');
+
+        // Single-item downloads; each writes a download_audits row.
+        Route::get('candidates/{profile}/documents/{document}/download', [AdminCandidateDownloadController::class, 'document'])
+            ->middleware('throttle:downloads');
+        Route::get('candidates/{profile}/resume', [AdminCandidateDownloadController::class, 'resume'])
+            ->middleware('throttle:downloads');
+        Route::get('candidates/{profile}/pack', [AdminCandidateDownloadController::class, 'pack'])
+            ->middleware('throttle:downloads');
+
+        Route::get('download-audits', [AdminDownloadAuditController::class, 'index']);
+
+        // Bulk ZIP exports: create (queued job), poll status, stream the ZIP.
+        // {export} binds to BulkExport via the controller type hints.
+        Route::post('candidate-exports', [AdminCandidateExportController::class, 'store']);
+        Route::get('candidate-exports/{export}', [AdminCandidateExportController::class, 'show']);
+        Route::get('candidate-exports/{export}/download', [AdminCandidateExportController::class, 'download'])
+            ->middleware('throttle:downloads');
     });
 
     Route::prefix('candidate')->middleware('role:candidate')->group(function () {

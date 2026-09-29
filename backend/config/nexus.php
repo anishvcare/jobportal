@@ -40,4 +40,16 @@ return [
     */
     'pack_rebuild_delay' => (int) env('PACK_REBUILD_DELAY', 10),
 
+    /*
+    | Admin bulk ZIP export limits. `max_candidates` caps how many candidates
+    | a single export may include (enforced server-side in the request and
+    | mirrored by the UI batching). `ttl_hours` is how long a finished ZIP
+    | stays downloadable before the scheduled purge removes it. Both values
+    | are single-sourced from here.
+    */
+    'bulk_export' => [
+        'max_candidates' => (int) env('BULK_EXPORT_MAX', 50),
+        'ttl_hours' => (int) env('BULK_EXPORT_TTL_HOURS', 24),
+    ],
+
 ];
