@@ -2,6 +2,7 @@
 
 import type { ReactNode } from "react";
 import { CompletenessMeter } from "@/components/candidate/CompletenessMeter";
+import { PackDownloads } from "@/components/candidate/PackDownloads";
 import { DocumentUploader } from "@/components/candidate/documents/DocumentUploader";
 import { MultiDocumentSection } from "@/components/candidate/documents/MultiDocumentSection";
 import { PassportSection } from "@/components/candidate/documents/PassportSection";
@@ -147,10 +148,11 @@ export default function CandidateDocumentsPage() {
           </DocSection>
         </div>
 
-        <aside className="lg:order-2">
+        <aside className="space-y-6 lg:order-2">
           <Card>
             <CompletenessMeter completeness={profile.completeness} />
           </Card>
+          <PackDownloads />
         </aside>
       </div>
     </>

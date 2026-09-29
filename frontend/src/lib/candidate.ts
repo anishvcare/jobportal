@@ -197,3 +197,35 @@ export async function deleteAccount(): Promise<void> {
 export async function fetchCompleteness(): Promise<Completeness> {
   return fetcher<Completeness>(`${PROFILE_KEY}/completeness`);
 }
+
+/**
+ * Fetch a PDF from the given candidate endpoint as a blob and trigger a browser
+ * download with the supplied filename. Uses the shared api client so cookies,
+ * XSRF handling and the 419 retry all apply. Resolves once the download has been
+ * kicked off; the temporary object URL is revoked afterwards.
+ */
+async function downloadPdf(path: string, filename: string): Promise<void> {
+  const { data } = await api.get<Blob>(path, { responseType: "blob" });
+  const url = URL.createObjectURL(data);
+  try {
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = filename;
+    link.rel = "noopener";
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+  } finally {
+    URL.revokeObjectURL(url);
+  }
+}
+
+/** Download the candidate's auto-generated résumé PDF (GET /candidate/resume). */
+export function downloadResume(): Promise<void> {
+  return downloadPdf("/candidate/resume", "resume.pdf");
+}
+
+/** Download the candidate's full Candidate Pack PDF (GET /candidate/pack). */
+export function downloadCandidatePack(): Promise<void> {
+  return downloadPdf("/candidate/pack", "candidate-pack.pdf");
+}
