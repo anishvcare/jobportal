@@ -29,6 +29,9 @@ class PackController extends Controller
     public function resume(Request $request): StreamedResponse
     {
         $profile = $this->resolveProfile($request);
+        // Owner guarantee is structural: the route carries no {profile} id, so
+        // resolveProfile always returns the caller's own profile. This
+        // authorize() call is defense-in-depth for any future {profile} route.
         $this->authorize('view', $profile);
 
         $bytes = $this->builder->renderResume($profile);
@@ -51,6 +54,9 @@ class PackController extends Controller
     public function pack(Request $request): StreamedResponse|JsonResponse
     {
         $profile = $this->resolveProfile($request);
+        // Owner guarantee is structural: the route carries no {profile} id, so
+        // resolveProfile always returns the caller's own profile. This
+        // authorize() call is defense-in-depth for any future {profile} route.
         $this->authorize('view', $profile);
 
         $pack = $this->builder->ensureFresh($profile);

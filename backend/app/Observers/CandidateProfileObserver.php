@@ -18,8 +18,14 @@ class CandidateProfileObserver
         $this->markStaleAndRebuild($profile->id);
     }
 
+    /**
+     * A deleted profile has nothing left to rebuild: the candidate_packs row is
+     * removed by the cascade and the account-delete flow deletes the cached
+     * pack file. Dispatching BuildCandidatePack here would only queue wasted
+     * work (the job no-ops on a missing profile), so we skip it.
+     */
     public function deleted(CandidateProfile $profile): void
     {
-        $this->markStaleAndRebuild($profile->id);
+        // Intentionally no rebuild dispatch; see method docblock.
     }
 }

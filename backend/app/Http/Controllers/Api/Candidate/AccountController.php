@@ -26,6 +26,12 @@ class AccountController extends Controller
                 Storage::disk($document->disk)->delete($document->path);
             }
 
+            // Remove the cached candidate pack PDF (and any partial writes). It
+            // embeds photo, Aadhaar, SSLC, passport pages and the passport
+            // number, so it must not survive a hard-delete "erase my data" flow.
+            // The candidate_packs row itself is removed by the cascade below.
+            Storage::disk('documents')->deleteDirectory("packs/{$profile->id}");
+
             // Cascades to candidate_profiles and its children/pivots/documents.
             $user->delete();
         });
