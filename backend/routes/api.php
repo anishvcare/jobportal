@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Api\Admin\CandidateController as AdminCandidateController;
 use App\Http\Controllers\Api\Admin\DashboardController as AdminDashboardController;
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\Candidate\AccountController;
@@ -34,6 +35,12 @@ Route::middleware(['auth:sanctum', 'throttle:api'])->group(function () {
 
     Route::prefix('admin')->middleware('role:admin')->group(function () {
         Route::get('dashboard', AdminDashboardController::class);
+
+        // {profile} binds to CandidateProfile via the controller type hints.
+        Route::get('candidates', [AdminCandidateController::class, 'index']);
+        Route::get('candidates/{profile}', [AdminCandidateController::class, 'show']);
+        Route::get('candidates/{profile}/photo', [AdminCandidateController::class, 'photo'])
+            ->middleware('throttle:downloads');
     });
 
     Route::prefix('candidate')->middleware('role:candidate')->group(function () {
