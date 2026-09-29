@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Api\Admin\CandidateController as AdminCandidateController;
 use App\Http\Controllers\Api\Admin\CandidateDownloadController as AdminCandidateDownloadController;
+use App\Http\Controllers\Api\Admin\CandidateExportController as AdminCandidateExportController;
 use App\Http\Controllers\Api\Admin\DashboardController as AdminDashboardController;
 use App\Http\Controllers\Api\Admin\DownloadAuditController as AdminDownloadAuditController;
 use App\Http\Controllers\Api\AuthController;
@@ -53,6 +54,13 @@ Route::middleware(['auth:sanctum', 'throttle:api'])->group(function () {
             ->middleware('throttle:downloads');
 
         Route::get('download-audits', [AdminDownloadAuditController::class, 'index']);
+
+        // Bulk ZIP exports: create (queued job), poll status, stream the ZIP.
+        // {export} binds to BulkExport via the controller type hints.
+        Route::post('candidate-exports', [AdminCandidateExportController::class, 'store']);
+        Route::get('candidate-exports/{export}', [AdminCandidateExportController::class, 'show']);
+        Route::get('candidate-exports/{export}/download', [AdminCandidateExportController::class, 'download'])
+            ->middleware('throttle:downloads');
     });
 
     Route::prefix('candidate')->middleware('role:candidate')->group(function () {
