@@ -54,20 +54,27 @@ class DocumentController extends Controller
             $this->deleteExistingOfType($profile, $type);
         }
 
-        $document = $this->persist($profile, $type, $file, $meta, $request->input('sort_order'));
+        $document = $this->persist($profile, $type, $file, $meta);
 
         return new DocumentResource($document);
     }
 
     /**
-     * Replace the file behind an existing document (keeps its sort_order).
+     * Replace the file behind an existing document.
+     *
+     * The document's type is intentionally preserved: a replace only swaps the
+     * underlying file and never re-types the row. Trusting a client "type" here
+     * would let a passport page become a second single-value doc (e.g. a second
+     * "photo") and break the single-file invariant that store() enforces.
      */
     public function update(UploadDocumentRequest $request, UploadValidator $validator, Document $document): DocumentResource
     {
         $profile = $this->resolveProfile($request);
         $this->authorize('update', $document);
 
-        $type = $request->documentType();
+        // Keep the existing type; ignore any client-supplied "type". The
+        // authorization above guarantees the document belongs to this profile.
+        $type = $document->type;
         $file = $request->file('file');
         $meta = $validator->validate($file);
 
@@ -76,7 +83,6 @@ class DocumentController extends Controller
         $path = $this->storeFile($profile, $type, $file);
 
         $document->update([
-            'type' => $type,
             'path' => $path,
             'disk' => self::DISK,
             'original_name' => $file->getClientOriginalName(),
@@ -172,14 +178,15 @@ class DocumentController extends Controller
         CandidateProfile $profile,
         DocumentType $type,
         UploadedFile $file,
-        array $meta,
-        mixed $sortOrder
+        array $meta
     ): Document {
         $path = $this->storeFile($profile, $type, $file);
 
-        $order = $sortOrder !== null
-            ? (int) $sortOrder
-            : (int) $profile->documents()->where('type', $type->value)->max('sort_order') + 1;
+        // sort_order is always derived server-side (append = max + 1). It is
+        // never trusted from the client, so it cannot collide or point out of
+        // range. Single-value types delete any prior row first, so they start
+        // over at 0.
+        $order = (int) $profile->documents()->where('type', $type->value)->max('sort_order') + 1;
 
         return $profile->documents()->create([
             'type' => $type,

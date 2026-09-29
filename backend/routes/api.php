@@ -56,7 +56,7 @@ Route::middleware(['auth:sanctum', 'throttle:api'])->group(function () {
 
         Route::get('documents', [DocumentController::class, 'index']);
         Route::post('documents', [DocumentController::class, 'store'])->middleware('throttle:uploads');
-        Route::patch('documents/reorder', [DocumentController::class, 'reorder']);
+        Route::patch('documents/reorder', [DocumentController::class, 'reorder'])->middleware('throttle:uploads');
         Route::post('documents/{document}', [DocumentController::class, 'update'])->middleware('throttle:uploads');
         Route::delete('documents/{document}', [DocumentController::class, 'destroy']);
         Route::get('documents/{document}/download', [DocumentController::class, 'download'])->middleware('throttle:downloads');

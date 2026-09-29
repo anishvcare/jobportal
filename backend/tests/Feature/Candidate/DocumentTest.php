@@ -181,3 +181,33 @@ it('replaces the file behind a specific multi document', function () {
     Storage::disk('documents')->assertMissing($oldPath);
     expect(Document::count())->toBe(1);
 });
+
+it('preserves the document type on replace and ignores a mismatched client type', function () {
+    $user = User::factory()->candidate()->create();
+
+    // Seed an existing single-value photo that must remain the only one.
+    actingAsUser($user)->postJson('/api/candidate/documents', [
+        'type' => 'photo',
+        'file' => UploadedFile::fake()->image('photo.jpg'),
+    ])->assertCreated();
+
+    // A multi-value passport page we will try to replace with a bogus type.
+    actingAsUser($user)->postJson('/api/candidate/documents', [
+        'type' => 'passport',
+        'file' => UploadedFile::fake()->image('page1.jpg'),
+    ])->assertCreated();
+
+    $passport = Document::where('type', 'passport')->firstOrFail();
+
+    // Attempt to re-type the passport page into a second "photo" on replace.
+    actingAsUser($user)->post("/api/candidate/documents/{$passport->id}", [
+        'type' => 'photo',
+        'file' => UploadedFile::fake()->image('page1-new.jpg'),
+    ])->assertOk()->assertJsonPath('data.type', 'passport');
+
+    // The client type is ignored: the row stays a passport, and the
+    // single-value invariant holds (still exactly one photo).
+    expect($passport->fresh()->type->value)->toBe('passport')
+        ->and(Document::where('type', 'photo')->count())->toBe(1)
+        ->and(Document::where('type', 'passport')->count())->toBe(1);
+});

@@ -22,7 +22,9 @@ class UploadDocumentRequest extends FormRequest
     {
         return [
             'type' => ['required', 'string', Rule::in(DocumentType::values())],
-            'sort_order' => ['nullable', 'integer', 'min:0'],
+            // sort_order is intentionally NOT accepted from the client; the
+            // controller derives it server-side (append = max + 1) so a client
+            // cannot force a collision or an out-of-range order.
             'file' => [
                 'required',
                 'file',
