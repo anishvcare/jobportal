@@ -1,7 +1,9 @@
 <?php
 
 use App\Http\Controllers\Api\Admin\CandidateController as AdminCandidateController;
+use App\Http\Controllers\Api\Admin\CandidateDownloadController as AdminCandidateDownloadController;
 use App\Http\Controllers\Api\Admin\DashboardController as AdminDashboardController;
+use App\Http\Controllers\Api\Admin\DownloadAuditController as AdminDownloadAuditController;
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\Candidate\AccountController;
 use App\Http\Controllers\Api\Candidate\DocumentController;
@@ -41,6 +43,16 @@ Route::middleware(['auth:sanctum', 'throttle:api'])->group(function () {
         Route::get('candidates/{profile}', [AdminCandidateController::class, 'show']);
         Route::get('candidates/{profile}/photo', [AdminCandidateController::class, 'photo'])
             ->middleware('throttle:downloads');
+
+        // Single-item downloads; each writes a download_audits row.
+        Route::get('candidates/{profile}/documents/{document}/download', [AdminCandidateDownloadController::class, 'document'])
+            ->middleware('throttle:downloads');
+        Route::get('candidates/{profile}/resume', [AdminCandidateDownloadController::class, 'resume'])
+            ->middleware('throttle:downloads');
+        Route::get('candidates/{profile}/pack', [AdminCandidateDownloadController::class, 'pack'])
+            ->middleware('throttle:downloads');
+
+        Route::get('download-audits', [AdminDownloadAuditController::class, 'index']);
     });
 
     Route::prefix('candidate')->middleware('role:candidate')->group(function () {
