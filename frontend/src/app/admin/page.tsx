@@ -3,6 +3,7 @@
 import useSWR from "swr";
 import { Alert } from "@/components/ui/Alert";
 import { Card, PageHeader } from "@/components/ui/Card";
+import { AdminNav } from "@/components/admin/AdminNav";
 import { fetcher } from "@/lib/api";
 import { errorMessage } from "@/lib/errors";
 import type { AdminDashboard } from "@/lib/types";
@@ -18,6 +19,7 @@ export default function AdminDashboardPage() {
 
   return (
     <>
+      <AdminNav />
       <PageHeader title="Admin dashboard" description="Platform overview." />
       {error ? (
         <Alert tone="error">{errorMessage(error)}</Alert>
