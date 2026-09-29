@@ -328,12 +328,15 @@ class CandidateSearch
         // A profile-PDF document also satisfies the pack, but CompletenessService
         // only bumps `pack_ready`, not the percentage, so we mirror the
         // percentage math exactly here.
+        // MySQL's CAST requires SIGNED (it rejects "AS INTEGER"); SQLite uses INTEGER.
+        $intType = DB::connection()->getDriverName() === 'mysql' ? 'signed' : 'integer';
+
         return DB::query()->selectRaw(
             'cast(round('
             .'(('.$this->wrapSub($presentBase).') + (case when candidate_profiles.has_passport = 1 and ('.$this->wrapSub($passportPresent).') > 0 then 1 else 0 end)) '
             .'* 100.0 / '
             .'('.$baseCount.' + (case when candidate_profiles.has_passport = 1 then 1 else 0 end))'
-            .') as integer)',
+            .') as '.$intType.')',
             [...$presentBase->getBindings(), ...$passportPresent->getBindings()]
         );
     }
