@@ -184,8 +184,8 @@ class DocumentController extends Controller
 
         // sort_order is always derived server-side (append = max + 1). It is
         // never trusted from the client, so it cannot collide or point out of
-        // range. Single-value types delete any prior row first, so they start
-        // over at 0.
+        // range. Single-value types delete any prior row first, so the new row
+        // is the only one of its type and its order value is never consumed.
         $order = (int) $profile->documents()->where('type', $type->value)->max('sort_order') + 1;
 
         return $profile->documents()->create([
