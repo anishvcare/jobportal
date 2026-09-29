@@ -6,7 +6,7 @@ Mobile-first job portal PWA: Laravel REST API (`backend/`) + Next.js frontend (`
 
 ## Prerequisites
 
-- PHP 8.3+ with `gd`, `intl`, `pdo_mysql`, `zip`, and Composer 2
+- PHP 8.4+ with `gd`, `intl`, `pdo_mysql`, `zip`, and Composer 2
 - Node.js 20+ and npm
 - MySQL 8
 - `qpdf` (needed from the Candidate Pack milestone onward)
