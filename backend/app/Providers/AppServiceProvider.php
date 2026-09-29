@@ -37,5 +37,12 @@ class AppServiceProvider extends ServiceProvider
 
         RateLimiter::for('downloads', fn (Request $request) => Limit::perMinute(60)
             ->by($request->user()?->id ?: $request->ip()));
+
+        // Photo thumbnails are VIEWS, not file downloads: a single admin search
+        // page can render up to 100 thumbnails, which would blow the 60/min
+        // 'downloads' budget mid-render. Give them a generous view-oriented
+        // limit so a full page of thumbnails never 429s.
+        RateLimiter::for('thumbnails', fn (Request $request) => Limit::perMinute(300)
+            ->by($request->user()?->id ?: $request->ip()));
     }
 }

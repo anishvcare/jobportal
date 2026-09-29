@@ -43,7 +43,13 @@ class CandidateSummaryResource extends JsonResource
 
     /**
      * Whether a photo-type document exists, without leaking disk paths and
-     * without lazy loading (documents may or may not be eager-loaded).
+     * without a per-row query.
+     *
+     * The list query (CandidateSearch::query) surfaces this via a `has_photo`
+     * withExists column, so the whole page is a fixed number of queries. When
+     * `documents` happens to be eager-loaded (e.g. reused elsewhere) we read
+     * that instead. We never fall back to a lazy per-row exists() here, which
+     * would reintroduce the N+1.
      */
     private function hasPhotoDocument(): bool
     {
@@ -51,6 +57,6 @@ class CandidateSummaryResource extends JsonResource
             return $this->documents->contains(fn ($document) => $document->type === DocumentType::Photo);
         }
 
-        return $this->documents()->where('type', DocumentType::Photo->value)->exists();
+        return (bool) $this->has_photo;
     }
 }

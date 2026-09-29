@@ -13,7 +13,7 @@ return new class extends Migration
             $table->foreignId('requested_by')->constrained('users')->cascadeOnDelete(); // the admin who requested the export
             $table->json('candidate_ids');
             $table->string('status', 20)->default('queued'); // queued, processing, ready, failed
-            $table->unsignedSmallInteger('progress')->default(0); // number of candidates processed so far
+            $table->unsignedSmallInteger('progress')->default(0); // build progress as a 0-100 percent value
             $table->string('disk')->default('documents');
             $table->string('path')->nullable();
             $table->text('error')->nullable();

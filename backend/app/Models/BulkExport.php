@@ -22,6 +22,12 @@ class BulkExport extends Model
 
     public const string STATUS_FAILED = 'failed';
 
+    /**
+     * `progress` is a 0-100 percent value (not a candidate count): the build
+     * job stores round(processed / total * 100).
+     *
+     * @var list<string>
+     */
     protected $fillable = [
         'requested_by',
         'candidate_ids',

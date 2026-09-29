@@ -6,6 +6,7 @@ use App\Models\CandidateProfile;
 use App\Models\Document;
 use App\Models\DownloadAudit;
 use App\Models\User;
+use App\Services\Pdf\CandidatePackBuilder;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Symfony\Component\Process\Exception\ProcessStartFailedException;
@@ -195,6 +196,31 @@ it('ensure-fresh-builds the pack, streams it and writes a pack audit row', funct
     expect($audit->kind)->toBe(DownloadAudit::KIND_PACK)
         ->and($audit->actor_user_id)->toBe($admin->id)
         ->and($audit->candidate_profile_id)->toBe($profile->id);
+});
+
+it('returns 503 and writes no audit row when the pack build does not become ready', function () {
+    $admin = User::factory()->admin()->create();
+    $profile = createCandidateWithProfile();
+
+    // Force ensureFresh to yield a non-READY pack (build failure) by binding a
+    // fake builder. The auditor contract is audit-on-success-only, so the 503
+    // branch must return before any download_audits row is written.
+    $notReady = new CandidatePack([
+        'candidate_profile_id' => $profile->id,
+        'status' => CandidatePack::STATUS_FAILED,
+        'disk' => 'documents',
+        'path' => null,
+    ]);
+
+    $this->mock(CandidatePackBuilder::class, function ($mock) use ($notReady) {
+        $mock->shouldReceive('ensureFresh')->once()->andReturn($notReady);
+    });
+
+    actingAsUser($admin)
+        ->getJson("/api/admin/candidates/{$profile->id}/pack")
+        ->assertStatus(503);
+
+    expect(DownloadAudit::query()->count())->toBe(0);
 });
 
 /*

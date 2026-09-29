@@ -66,7 +66,12 @@ class CandidateSearch
             ->addSelect([
                 'experience_years' => $this->experienceYearsSub(),
                 'completeness_pct' => $this->completenessSub(),
-            ]);
+            ])
+            // Surface photo presence as a single boolean column on the list
+            // query so the summary resource never runs a per-row exists()
+            // (avoids an N+1 across the page). withExists compiles to a
+            // portable correlated `exists (...)` on both SQLite and MySQL.
+            ->withExists(['documents as has_photo' => fn (Builder $q) => $q->where('type', DocumentType::Photo->value)]);
 
         $this->applyKeyword($query, $filters['keyword'] ?? null);
         $this->applyEducationLevel($query, $filters['education_level_id'] ?? null);

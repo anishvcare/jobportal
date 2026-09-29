@@ -12,6 +12,7 @@ use App\Models\Skill;
 use App\Models\State;
 use App\Models\User;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 
@@ -369,6 +370,29 @@ it('returns per-trade counts over the whole filtered set', function () {
 
     expect($counts[$welder->id]['count'])->toBe(3)
         ->and($counts[$electrician->id]['count'])->toBe(1);
+});
+
+it('issues a bounded number of queries regardless of page size (no photo N+1)', function () {
+    // Seed several candidates, each with a photo document, so a per-row photo
+    // exists() would show up as one extra query per candidate.
+    foreach (range(1, 5) as $i) {
+        $c = searchCandidate();
+        searchDocument($c, DocumentType::Photo);
+    }
+
+    $admin = User::factory()->admin()->create();
+
+    DB::enableQueryLog();
+
+    actingAsUser($admin)->getJson('/api/admin/candidates?per_page=20')->assertOk();
+
+    $queryCount = count(DB::getQueryLog());
+    DB::disableQueryLog();
+
+    // The list is a fixed handful of queries (base list + eager loads +
+    // pagination count + trade counts), NOT one-per-candidate. A regression to
+    // the per-row photo exists() would push this well past the ceiling.
+    expect($queryCount)->toBeLessThanOrEqual(12);
 });
 
 // ---------------------------------------------------------------------------

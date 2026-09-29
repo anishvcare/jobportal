@@ -42,8 +42,11 @@ Route::middleware(['auth:sanctum', 'throttle:api'])->group(function () {
         // {profile} binds to CandidateProfile via the controller type hints.
         Route::get('candidates', [AdminCandidateController::class, 'index']);
         Route::get('candidates/{profile}', [AdminCandidateController::class, 'show']);
+        // A photo thumbnail is a VIEW, not a file download; it uses the
+        // higher-limit 'thumbnails' limiter so a full results page (up to 100
+        // thumbnails) does not exhaust the download budget mid-render.
         Route::get('candidates/{profile}/photo', [AdminCandidateController::class, 'photo'])
-            ->middleware('throttle:downloads');
+            ->middleware('throttle:thumbnails');
 
         // Single-item downloads; each writes a download_audits row.
         Route::get('candidates/{profile}/documents/{document}/download', [AdminCandidateDownloadController::class, 'document'])
