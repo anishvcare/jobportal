@@ -1,5 +1,6 @@
 <?php
 
+use App\Models\CandidateProfile;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
@@ -29,4 +30,17 @@ function actingAsUser(User $user): TestCase
     app('auth')->forgetGuards();
 
     return test()->actingAs($user, 'web');
+}
+
+/**
+ * Create a candidate User and its CandidateProfile, returning the profile
+ * with its user relation eager-loaded (respects Model::shouldBeStrict()).
+ *
+ * @param  array<string, mixed>  $overrides
+ */
+function createCandidateWithProfile(array $overrides = []): CandidateProfile
+{
+    $profile = CandidateProfile::factory()->create($overrides);
+
+    return $profile->load('user');
 }

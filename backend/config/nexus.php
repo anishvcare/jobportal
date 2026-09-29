@@ -21,4 +21,10 @@ return [
     */
     'login_code_ttl' => (int) env('LOGIN_CODE_TTL', 60),
 
+    /*
+    | Version of the candidate document-consent text currently in force.
+    | Stored alongside the consent timestamp so we know which text was agreed to.
+    */
+    'consent_version' => (string) env('CONSENT_VERSION', '1.0'),
+
 ];
