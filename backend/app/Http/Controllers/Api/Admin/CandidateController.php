@@ -119,12 +119,12 @@ class CandidateController extends Controller
                 $query->orderBy('dob', $direction === 'asc' ? 'desc' : 'asc');
                 break;
             case 'experience':
-                [$sql, $bindings] = $this->search->experienceSortExpression();
-                $query->orderByRaw("({$sql}) {$direction}", $bindings);
+                // Passing the sub-select builder lets Laravel manage the
+                // correlated subquery's bindings (no inlined literals).
+                $query->orderBy($this->search->experienceSortExpression(), $direction);
                 break;
             case 'completeness':
-                [$sql, $bindings] = $this->search->completenessSortExpression();
-                $query->orderByRaw("({$sql}) {$direction}", $bindings);
+                $query->orderBy($this->search->completenessSortExpression(), $direction);
                 break;
             case 'created_at':
             default:

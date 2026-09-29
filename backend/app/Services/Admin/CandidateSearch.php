@@ -6,6 +6,7 @@ use App\Enums\DocumentType;
 use App\Models\CandidateProfile;
 use App\Models\EducationLevel;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Query\Builder as QueryBuilder;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 
@@ -63,6 +64,10 @@ class CandidateSearch
         $query = CandidateProfile::query()
             ->with(self::SUMMARY_RELATIONS)
             ->select('candidate_profiles.*')
+            // The derived columns are real query-builder sub-selects, so
+            // Laravel compiles them as correlated subqueries and registers
+            // their ? bindings on the outer query in the correct order for
+            // BOTH MySQL and SQLite (never inlining bare literals).
             ->addSelect([
                 'experience_years' => $this->experienceYearsSub(),
                 'completeness_pct' => $this->completenessSub(),
@@ -235,14 +240,15 @@ class CandidateSearch
             return;
         }
 
-        [$sql, $bindings] = $this->experienceYearsExpression();
-
         if ($min !== null) {
-            $query->whereRaw("({$sql}) >= ?", [...$bindings, $min]);
+            // Passing a query-builder sub-select to where() lets Laravel manage
+            // both the placeholder and its bindings, so the correlated
+            // subquery's ? bindings are never inlined as bare literals.
+            $query->where($this->experienceYearsSub(), '>=', $min);
         }
 
         if ($max !== null) {
-            $query->whereRaw("({$sql}) <= ?", [...$bindings, $max]);
+            $query->where($this->experienceYearsSub(), '<=', $max);
         }
     }
 
@@ -252,112 +258,109 @@ class CandidateSearch
             return;
         }
 
-        [$sql, $bindings] = $this->completenessExpression();
-
-        $query->whereRaw("({$sql}) >= ?", [...$bindings, $min]);
+        $query->where($this->completenessSub(), '>=', $min);
     }
 
     /**
      * Correlated subquery selecting a candidate's total experience in whole
      * years. Date math is driver-guarded (portable across SQLite and MySQL).
+     *
+     * Returned as a real query-builder sub-select so Laravel registers the
+     * date ? binding on whichever outer clause consumes it (select, where or
+     * order by). Each call returns a fresh builder to avoid binding reuse.
      */
-    private function experienceYearsSub(): \Illuminate\Database\Query\Builder|\Closure
-    {
-        [$sql, $bindings] = $this->experienceYearsExpression();
-
-        return DB::query()->selectRaw("({$sql})", $bindings);
-    }
-
-    /**
-     * @return array{0:string,1:array<int, mixed>}
-     */
-    private function experienceYearsExpression(): array
+    private function experienceYearsSub(): QueryBuilder
     {
         $today = Carbon::today()->toDateString();
 
+        $builder = DB::query()
+            ->from('candidate_experiences')
+            ->whereColumn('candidate_experiences.candidate_profile_id', 'candidate_profiles.id')
+            ->whereNotNull('start_date');
+
         if (DB::connection()->getDriverName() === 'mysql') {
             // SUM of day-spans across all experience rows, converted to years.
-            $sql = 'select coalesce(floor(sum(datediff('
-                .'coalesce(end_date, ?), start_date)) / 365.25), 0) '
-                .'from candidate_experiences '
-                .'where candidate_experiences.candidate_profile_id = candidate_profiles.id '
-                .'and start_date is not null';
-
-            return [$sql, [$today]];
+            return $builder->selectRaw(
+                'coalesce(floor(sum(datediff(coalesce(end_date, ?), start_date)) / 365.25), 0)',
+                [$today]
+            );
         }
 
         // SQLite: julianday() gives day counts; same year conversion.
-        $sql = 'select coalesce(cast(sum(julianday(coalesce(end_date, ?)) - julianday(start_date)) / 365.25 as integer), 0) '
-            .'from candidate_experiences '
-            .'where candidate_experiences.candidate_profile_id = candidate_profiles.id '
-            .'and start_date is not null';
-
-        return [$sql, [$today]];
+        return $builder->selectRaw(
+            'coalesce(cast(sum(julianday(coalesce(end_date, ?)) - julianday(start_date)) / 365.25 as integer), 0)',
+            [$today]
+        );
     }
 
     /**
      * Correlated subquery selecting a candidate's completeness percentage,
      * mirroring CompletenessService: base required types plus a conditional
      * passport requirement, expressed entirely in SQL to avoid N+1.
+     *
+     * Built from real query-builder sub-selects (present-count and passport
+     * exists) so every value binds through Laravel and compiles to portable,
+     * quoted parameters on both MySQL and SQLite. A fresh builder is returned
+     * each call to keep bindings isolated per consuming clause.
      */
-    private function completenessSub(): \Illuminate\Database\Query\Builder
-    {
-        [$sql, $bindings] = $this->completenessExpression();
-
-        return DB::query()->selectRaw("({$sql})", $bindings);
-    }
-
-    /**
-     * @return array{0:string,1:array<int, mixed>}
-     */
-    private function completenessExpression(): array
+    private function completenessSub(): QueryBuilder
     {
         $baseTypes = array_map(fn (DocumentType $type) => $type->value, self::BASE_REQUIRED);
-        $placeholders = implode(',', array_fill(0, count($baseTypes), '?'));
+        $baseCount = count($baseTypes);
+        $passportType = DocumentType::Passport->value;
 
         // present = distinct required doc types the candidate has uploaded.
-        // required = base types + 1 when the candidate declares a passport.
-        // A profile-PDF document also satisfies the pack, but CompletenessService
-        // only bumps `pack_ready`, not the percentage, so we mirror the percentage
-        // math exactly here.
-        $presentBase = 'select count(distinct d.type) from documents d '
-            ."where d.candidate_profile_id = candidate_profiles.id and d.type in ({$placeholders})";
+        $presentBase = DB::query()
+            ->from('documents as d')
+            ->whereColumn('d.candidate_profile_id', 'candidate_profiles.id')
+            ->whereIn('d.type', $baseTypes)
+            ->selectRaw('count(distinct d.type)');
 
-        $passportPresent = 'select count(*) from documents dp '
-            .'where dp.candidate_profile_id = candidate_profiles.id and dp.type = ?';
-
-        $baseCount = count($baseTypes);
+        // whether the declared passport document is present.
+        $passportPresent = DB::query()
+            ->from('documents as dp')
+            ->whereColumn('dp.candidate_profile_id', 'candidate_profiles.id')
+            ->where('dp.type', $passportType)
+            ->selectRaw('count(*)');
 
         // required total = baseCount + (has_passport ? 1 : 0)
         // present total  = presentBase + (has_passport AND passport doc exists ? 1 : 0)
-        $sql = 'cast(round('
-            .'(('.$presentBase.') + (case when candidate_profiles.has_passport = 1 and ('.$passportPresent.') > 0 then 1 else 0 end)) '
+        // A profile-PDF document also satisfies the pack, but CompletenessService
+        // only bumps `pack_ready`, not the percentage, so we mirror the
+        // percentage math exactly here.
+        return DB::query()->selectRaw(
+            'cast(round('
+            .'(('.$this->wrapSub($presentBase).') + (case when candidate_profiles.has_passport = 1 and ('.$this->wrapSub($passportPresent).') > 0 then 1 else 0 end)) '
             .'* 100.0 / '
             .'('.$baseCount.' + (case when candidate_profiles.has_passport = 1 then 1 else 0 end))'
-            .') as integer)';
-
-        $bindings = [...$baseTypes, DocumentType::Passport->value];
-
-        return [$sql, $bindings];
+            .') as integer)',
+            [...$presentBase->getBindings(), ...$passportPresent->getBindings()]
+        );
     }
 
     /**
-     * The base column expression used to sort by experience years.
-     *
-     * @return array{0:string,1:array<int, mixed>}
+     * Inline a sub-builder's SQL as a parenthesised scalar subquery. The
+     * caller is responsible for appending the sub-builder's bindings in the
+     * same left-to-right order the placeholders appear.
      */
-    public function experienceSortExpression(): array
+    private function wrapSub(QueryBuilder $sub): string
     {
-        return $this->experienceYearsExpression();
+        return '('.$sub->toSql().')';
     }
 
     /**
-     * The base column expression used to sort by completeness.
-     *
-     * @return array{0:string,1:array<int, mixed>}
+     * The base sub-select used to sort by experience years.
      */
-    public function completenessSortExpression(): array
+    public function experienceSortExpression(): QueryBuilder
     {
-        return $this->completenessExpression();
+        return $this->experienceYearsSub();
+    }
+
+    /**
+     * The base sub-select used to sort by completeness.
+     */
+    public function completenessSortExpression(): QueryBuilder
+    {
+        return $this->completenessSub();
     }
 }
