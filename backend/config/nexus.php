@@ -33,4 +33,11 @@ return [
     */
     'qpdf_path' => env('QPDF_PATH', 'qpdf'),
 
+    /*
+    | Delay (seconds) before a queued candidate-pack rebuild runs after a
+    | profile or document change. A small delay lets rapid successive edits
+    | settle so the pack is usually ready before anyone asks for it.
+    */
+    'pack_rebuild_delay' => (int) env('PACK_REBUILD_DELAY', 10),
+
 ];

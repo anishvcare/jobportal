@@ -6,6 +6,7 @@ use App\Http\Controllers\Api\Candidate\AccountController;
 use App\Http\Controllers\Api\Candidate\DocumentController;
 use App\Http\Controllers\Api\Candidate\EducationController;
 use App\Http\Controllers\Api\Candidate\ExperienceController;
+use App\Http\Controllers\Api\Candidate\PackController;
 use App\Http\Controllers\Api\Candidate\ProfileController;
 use App\Http\Controllers\Api\Candidate\SelectionsController;
 use App\Http\Controllers\Api\OnboardingController;
@@ -60,6 +61,9 @@ Route::middleware(['auth:sanctum', 'throttle:api'])->group(function () {
         Route::post('documents/{document}', [DocumentController::class, 'update'])->middleware('throttle:uploads');
         Route::delete('documents/{document}', [DocumentController::class, 'destroy']);
         Route::get('documents/{document}/download', [DocumentController::class, 'download'])->middleware('throttle:downloads');
+
+        Route::get('resume', [PackController::class, 'resume'])->middleware('throttle:downloads');
+        Route::get('pack', [PackController::class, 'pack'])->middleware('throttle:downloads');
 
         Route::delete('account', [AccountController::class, 'destroy']);
     });

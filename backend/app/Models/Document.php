@@ -3,9 +3,12 @@
 namespace App\Models;
 
 use App\Enums\DocumentType;
+use App\Observers\DocumentObserver;
+use Illuminate\Database\Eloquent\Attributes\ObservedBy;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
+#[ObservedBy(DocumentObserver::class)]
 class Document extends Model
 {
     protected $fillable = [
