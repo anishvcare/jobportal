@@ -20,9 +20,27 @@ function firstValue(value: string | string[] | undefined): string | undefined {
   return value;
 }
 
+/**
+ * Combined keyword for the board search. Uses explicit `keyword`/`q` first,
+ * then appends any free-text `location` (from the home hero) so both terms
+ * feed the single keyword filter the API supports.
+ */
+function keywordFromRaw(raw: Record<string, string | string[] | undefined>): string | undefined {
+  const keyword = firstValue(raw.keyword) ?? firstValue(raw.q);
+  const location = firstValue(raw.location);
+  const parts = [keyword, location]
+    .map((p) => p?.trim())
+    .filter((p): p is string => !!p && p !== "");
+  return parts.length ? parts.join(" ") : undefined;
+}
+
 /** Turns the raw searchParams into the params getJobs understands. */
 function toSearchParams(raw: Record<string, string | string[] | undefined>): JobSearchParams {
-  const keyword = firstValue(raw.keyword) ?? firstValue(raw.q);
+  // The home hero exposes a free-text `location` field, but the backend has no
+  // free-text location filter (location is structured: country/state/district).
+  // Fold any `location` value into the keyword search so it is honoured rather
+  // than silently dropped. Explicit `keyword`/`q` still take precedence.
+  const keyword = keywordFromRaw(raw);
   const params: JobSearchParams = { per_page: PER_PAGE };
   if (keyword && keyword.trim() !== "") params.keyword = keyword.trim();
   const countryId = firstValue(raw.country_id);
@@ -113,7 +131,7 @@ export default async function JobsPage({ searchParams }: PageProps<"/jobs">) {
 
   // Current filter values used to keep the form and pagination in sync.
   const current = {
-    keyword: firstValue(raw.keyword) ?? firstValue(raw.q) ?? "",
+    keyword: keywordFromRaw(raw) ?? "",
     country_id: firstValue(raw.country_id) ?? "",
     state_id: firstValue(raw.state_id) ?? "",
     district_id: firstValue(raw.district_id) ?? "",

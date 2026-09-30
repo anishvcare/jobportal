@@ -136,6 +136,8 @@ export interface JobInput {
   salary_currency?: string | null;
   deadline?: string | null;
   skill_ids?: number[];
+  /** Free-text skill names, created on the fly (mirrors the candidate flow). */
+  skills?: string[];
 }
 
 /** Create a new job posting. */

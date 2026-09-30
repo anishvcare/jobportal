@@ -40,9 +40,23 @@ const orNull = (v?: string): string | null => (v && v !== "" ? v : null);
 export function JobForm({ job }: { job?: EmployerJob }) {
   const router = useRouter();
   const { lookups, isLoading: lookupsLoading } = useLookups();
-  const [skillIds, setSkillIds] = useState<number[]>(job?.skills.map((s) => s.id) ?? []);
+  // Skills are entered as free-text names (created on the fly by the backend),
+  // matching the candidate profile flow. This works for both create and edit.
+  const [skills, setSkills] = useState<string[]>(job?.skills.map((s) => s.name) ?? []);
+  const [skillDraft, setSkillDraft] = useState("");
   const [saveError, setSaveError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
+
+  function addSkill(raw: string) {
+    const name = raw.trim();
+    if (name === "") return;
+    setSkills((prev) => (prev.some((s) => s.toLowerCase() === name.toLowerCase()) ? prev : [...prev, name]));
+    setSkillDraft("");
+  }
+
+  function removeSkill(name: string) {
+    setSkills((prev) => prev.filter((s) => s !== name));
+  }
 
   const {
     register,
@@ -81,10 +95,6 @@ export function JobForm({ job }: { job?: EmployerJob }) {
 
   const tradeGroups = lookups?.job_categories ?? [];
   const educationLevels = [...(lookups?.education_levels ?? [])].sort((a, b) => a.rank - b.rank);
-  // Skills are keyed by id. There is no public skills lookup (skills are created
-  // on demand by candidates), so the selectable set is the skills already
-  // attached to this job. Employers can therefore keep or drop existing skills.
-  const jobSkills = job?.skills ?? [];
 
   const onSubmit = handleSubmit(async (values) => {
     setSaving(true);
@@ -105,7 +115,7 @@ export function JobForm({ job }: { job?: EmployerJob }) {
       salary_max: toNum(values.salary_max),
       salary_currency: orNull(values.salary_currency)?.toUpperCase() ?? null,
       deadline: orNull(values.deadline),
-      skill_ids: skillIds,
+      skills,
     };
     try {
       if (job) await updateJob(job.id, payload);
@@ -224,36 +234,45 @@ export function JobForm({ job }: { job?: EmployerJob }) {
         <TextInput id="deadline" type="date" {...register("deadline")} />
       </Field>
 
-      {jobSkills.length > 0 && (
-        <Field label="Required skills" htmlFor="skills" hint="Tick the skills to keep on this job.">
-          <ul className="flex flex-wrap gap-2">
-            {jobSkills.map((skill) => {
-              const checked = skillIds.includes(skill.id);
-              return (
-                <li key={skill.id}>
-                  <label
-                    className={`inline-flex cursor-pointer items-center gap-1.5 rounded-full px-3 py-1 text-sm ${
-                      checked ? "bg-brand-50 text-brand-800" : "bg-slate-100 text-slate-500 line-through"
-                    }`}
+      <Field label="Required skills" htmlFor="skill-draft" hint="Add the skills this job needs. Press Enter to add each one.">
+        <div className="flex gap-2">
+          <TextInput
+            id="skill-draft"
+            value={skillDraft}
+            onChange={(e) => setSkillDraft(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter" || e.key === ",") {
+                e.preventDefault();
+                addSkill(skillDraft);
+              }
+            }}
+            placeholder="e.g. Welding"
+            maxLength={60}
+          />
+          <Button type="button" variant="secondary" onClick={() => addSkill(skillDraft)}>
+            Add
+          </Button>
+        </div>
+        {skills.length > 0 && (
+          <ul className="mt-2 flex flex-wrap gap-2">
+            {skills.map((skill) => (
+              <li key={skill}>
+                <span className="inline-flex items-center gap-1.5 rounded-full bg-brand-50 px-3 py-1 text-sm text-brand-800">
+                  {skill}
+                  <button
+                    type="button"
+                    onClick={() => removeSkill(skill)}
+                    className="text-brand-600 hover:text-brand-900"
+                    aria-label={`Remove ${skill}`}
                   >
-                    <input
-                      type="checkbox"
-                      className="h-4 w-4 accent-brand-600"
-                      checked={checked}
-                      onChange={(e) =>
-                        setSkillIds((prev) =>
-                          e.target.checked ? [...prev, skill.id] : prev.filter((id) => id !== skill.id),
-                        )
-                      }
-                    />
-                    {skill.name}
-                  </label>
-                </li>
-              );
-            })}
+                    ×
+                  </button>
+                </span>
+              </li>
+            ))}
           </ul>
-        </Field>
-      )}
+        )}
+      </Field>
 
       {saveError && <Alert tone="error">{saveError}</Alert>}
 

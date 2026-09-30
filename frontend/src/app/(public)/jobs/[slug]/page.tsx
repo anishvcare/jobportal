@@ -70,7 +70,9 @@ function buildJsonLd(job: JobDetail): Record<string, unknown> {
 
   const salary = job.base_salary;
   if (salary.min != null || salary.max != null) {
-    const value: Record<string, unknown> = { "@type": "QuantitativeValue", unitText: "MONTH" };
+    // No salary-period field exists on the job, so `unitText` is omitted rather
+    // than assuming a period (e.g. MONTH) that could mislabel annual/daily ranges.
+    const value: Record<string, unknown> = { "@type": "QuantitativeValue" };
     if (salary.min != null) value.minValue = salary.min;
     if (salary.max != null) value.maxValue = salary.max;
     const monetary: Record<string, unknown> = { "@type": "MonetaryAmount", value };
