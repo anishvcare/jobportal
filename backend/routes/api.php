@@ -7,6 +7,7 @@ use App\Http\Controllers\Api\Admin\DashboardController as AdminDashboardControll
 use App\Http\Controllers\Api\Admin\DownloadAuditController as AdminDownloadAuditController;
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\Candidate\AccountController;
+use App\Http\Controllers\Api\Candidate\ApplicationController as CandidateApplicationController;
 use App\Http\Controllers\Api\Candidate\DocumentController;
 use App\Http\Controllers\Api\Candidate\EducationController;
 use App\Http\Controllers\Api\Candidate\ExperienceController;
@@ -17,6 +18,7 @@ use App\Http\Controllers\Api\Employer\ApplicantController as EmployerApplicantCo
 use App\Http\Controllers\Api\Employer\JobController as EmployerJobController;
 use App\Http\Controllers\Api\Employer\ProfileController as EmployerProfileController;
 use App\Http\Controllers\Api\OnboardingController;
+use App\Http\Controllers\Api\Public\JobController as PublicJobController;
 use App\Http\Controllers\Api\Public\LookupController;
 use Illuminate\Support\Facades\Route;
 
@@ -27,6 +29,11 @@ Route::prefix('public')->middleware('throttle:public')->group(function () {
     Route::get('lookups', [LookupController::class, 'index']);
     Route::get('countries/{country}/states', [LookupController::class, 'states']);
     Route::get('states/{state}/districts', [LookupController::class, 'districts']);
+
+    // Public job board. Detail binds by slug (JobPost's default route key) and
+    // 404s for any non-live job. Responses are tagged public + cacheable.
+    Route::get('jobs', [PublicJobController::class, 'index']);
+    Route::get('jobs/{jobPost:slug}', [PublicJobController::class, 'show']);
 });
 
 /*
@@ -97,6 +104,12 @@ Route::middleware(['auth:sanctum', 'throttle:api'])->group(function () {
 
         Route::get('resume', [PackController::class, 'resume'])->middleware('throttle:downloads');
         Route::get('pack', [PackController::class, 'pack'])->middleware('throttle:downloads');
+
+        // Applications. {jobPost} binds by slug (JobPost's default route key)
+        // to match the public job URLs; login is required only to apply.
+        Route::post('jobs/{jobPost}/apply', [CandidateApplicationController::class, 'store']);
+        Route::get('applications', [CandidateApplicationController::class, 'index']);
+        Route::delete('applications/{application}', [CandidateApplicationController::class, 'destroy']);
 
         Route::delete('account', [AccountController::class, 'destroy']);
     });
