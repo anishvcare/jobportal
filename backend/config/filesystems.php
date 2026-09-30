@@ -47,6 +47,17 @@ return [
             'report' => false,
         ],
 
+        // Public disk for employer logos. Logos are non-sensitive and must NOT
+        // live on the private 'documents' disk. Served like the 'public' disk.
+        'logos' => [
+            'driver' => 'local',
+            'root' => storage_path('app/public/logos'),
+            'url' => rtrim(env('APP_URL', 'http://localhost'), '/').'/storage/logos',
+            'visibility' => 'public',
+            'throw' => false,
+            'report' => false,
+        ],
+
         // Private disk for candidate documents. Never symlinked to public;
         // in production FILESYSTEM_DISK/env swaps this to an S3-compatible bucket.
         'documents' => [

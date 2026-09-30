@@ -47,6 +47,11 @@ class User extends Authenticatable
         return $this->hasOne(CandidateProfile::class);
     }
 
+    public function employerProfile(): HasOne
+    {
+        return $this->hasOne(EmployerProfile::class);
+    }
+
     public function hasRole(Role ...$roles): bool
     {
         return $this->role !== null && in_array($this->role, $roles, true);

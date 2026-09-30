@@ -116,4 +116,9 @@ class CandidateProfile extends Model
     {
         return $this->hasOne(CandidatePack::class);
     }
+
+    public function applications(): HasMany
+    {
+        return $this->hasMany(Application::class);
+    }
 }
