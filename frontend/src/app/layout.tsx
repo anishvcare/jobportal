@@ -3,6 +3,7 @@ import "./globals.css";
 import { AuthProvider } from "@/components/auth/AuthProvider";
 import { SiteHeader } from "@/components/layout/SiteHeader";
 import { SiteFooter } from "@/components/layout/SiteFooter";
+import { ServiceWorkerRegister } from "@/components/pwa/ServiceWorkerRegister";
 import { APP_NAME, SITE_URL } from "@/lib/config";
 
 export const metadata: Metadata = {
@@ -39,6 +40,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
     <html lang="en" className="h-full">
       <body className="flex min-h-full flex-col">
         <AuthProvider>
+          <ServiceWorkerRegister />
           <SiteHeader />
           <main className="flex-1">{children}</main>
           <SiteFooter />
