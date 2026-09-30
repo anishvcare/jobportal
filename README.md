@@ -199,6 +199,52 @@ queue worker, and **qpdf** installed on the host.
 Deploy `frontend/` to Vercel and set `NEXT_PUBLIC_API_URL` and
 `NEXT_PUBLIC_SITE_URL` to the production URLs.
 
+### Alternative: cPanel shared hosting (CloudLinux)
+
+Both apps can run on one cPanel account, e.g. `api.example.com` (Laravel) and
+`example.com` (Next.js). Shared hosts often have an old glibc and per-account
+process limits, so **the frontend is never built on the server**: GitHub
+Actions builds it and the host only runs the result.
+
+**API (Laravel).** Clone the repo into your home directory (not a web root), then
+from `backend/` using the host's PHP 8.4 binary (e.g.
+`/opt/cpanel/ea-php84/root/usr/bin/php`):
+
+```bash
+php /usr/local/bin/composer install --no-dev --optimize-autoloader
+cp .env.example .env   # fill in DB_*, FRONTEND_URL, SESSION_*, GOOGLE_*, ADMIN_EMAILS
+php artisan key:generate
+php artisan migrate --force --seed
+php artisan storage:link && php artisan config:cache && php artisan route:cache
+```
+
+Point the API subdomain's document root at `backend/public` (a symlink from the
+cPanel docroot works). Run the queue from a once-per-minute cron job:
+`php artisan queue:work --stop-when-empty --max-time=50`. If qpdf is a
+home-directory build, set `QPDF_BINARY` and `QPDF_LD_LIBRARY_PATH`. After any
+`.env` change, run `php artisan config:cache` again.
+
+**Frontend (Next.js).** Every push to `main` that touches `frontend/` runs
+`.github/workflows/deploy-frontend.yml`, which builds a standalone bundle and
+force-pushes it to the `deploy-frontend` branch. `NEXT_PUBLIC_API_URL` and
+`NEXT_PUBLIC_SITE_URL` are baked in at build time; set them as repository
+**Variables** (Settings -> Secrets and variables -> Actions) to override the
+defaults in the workflow.
+
+On the host:
+
+```bash
+git clone --branch deploy-frontend --single-branch https://github.com/OWNER/REPO.git ~/nexusflow-web
+```
+
+In **Setup Node.js App** create an app with Node 22, mode Production,
+application root `nexusflow-web`, your domain as the URL, and startup file
+`app.js`. Do not run "NPM Install": the bundle ships its own trimmed
+`node_modules` inside `bundle/`.
+
+To update the site: `cd ~/nexusflow-web && git fetch origin deploy-frontend && git reset --hard origin/deploy-frontend`,
+then click **Restart** on the Node.js app.
+
 ### Sibling subdomains are required for cookie auth
 
 The frontend and API **must** be served from sibling subdomains of the same parent

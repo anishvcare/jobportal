@@ -1,0 +1,77 @@
+name: Build frontend deploy bundle
+
+# Builds the Next.js site on GitHub (plenty of memory, modern glibc) and
+# publishes a ready-to-run bundle to the `deploy-frontend` branch. Hosts that
+# cannot build Next.js themselves (cPanel/CloudLinux shared hosting) just
+# `git pull` that branch and restart the Node.js app. No npm install or
+# build runs on the server.
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "frontend/**"
+      - ".github/workflows/deploy-frontend.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: deploy-frontend
+  cancel-in-progress: true
+
+jobs:
+  bundle:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: frontend
+    env:
+      # NEXT_PUBLIC_* values are baked into the JavaScript at build time.
+      # Override per deployment with repository variables
+      # (Settings -> Secrets and variables -> Actions -> Variables).
+      NEXT_PUBLIC_API_URL: ${{ vars.NEXT_PUBLIC_API_URL || 'https://api.nexusflowservices.com' }}
+      NEXT_PUBLIC_SITE_URL: ${{ vars.NEXT_PUBLIC_SITE_URL || 'https://nexusflowservices.com' }}
+      NEXT_TELEMETRY_DISABLED: "1"
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - run: npm ci
+      - run: npm run build
+
+      - name: Assemble bundle
+        run: |
+          rm -rf "$RUNNER_TEMP/dist"
+          mkdir -p "$RUNNER_TEMP/dist"
+          cp -r .next/standalone "$RUNNER_TEMP/dist/bundle"
+          cp -r .next/static "$RUNNER_TEMP/dist/bundle/.next/static"
+          cp -r public "$RUNNER_TEMP/dist/bundle/public"
+          cp deploy/app.js "$RUNNER_TEMP/dist/app.js"
+          test -f "$RUNNER_TEMP/dist/bundle/server.js"
+          test ! -e "$RUNNER_TEMP/dist/node_modules"
+          {
+            echo "commit: $GITHUB_SHA"
+            echo "built:  $(date -u +%Y-%m-%dT%H:%M:%SZ)"
+            echo "api:    $NEXT_PUBLIC_API_URL"
+            echo "site:   $NEXT_PUBLIC_SITE_URL"
+          } > "$RUNNER_TEMP/dist/DEPLOY_INFO.txt"
+          du -sh "$RUNNER_TEMP/dist"
+
+      - name: Publish to deploy-frontend branch
+        working-directory: ${{ runner.temp }}/dist
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          git init -q -b deploy-frontend
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A -f
+          git commit -q -m "Frontend bundle for ${GITHUB_SHA::7}"
+          git push -q --force "https://x-access-token:${GH_TOKEN}@github.com/${GITHUB_REPOSITORY}.git" deploy-frontend
