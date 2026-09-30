@@ -1,0 +1,3 @@
+module.exports=[58145,a=>{"use strict";var b=a.i(87924),c=a.i(24034),d=a.i(8696),e=a.i(62067);a.s(["default",0,function(){return(0,b.jsxs)(b.Fragment,{children:[(0,b.jsx)(c.EmployerNav,{}),(0,b.jsx)(e.PageHeader,{title:"Post a job",description:"Create a draft, then publish it once your company is approved."}),(0,b.jsx)(d.JobForm,{})]})}])}];
+
+//# sourceMappingURL=src_app_employer_jobs_new_page_tsx_027875x._.js.map

@@ -1,0 +1,8 @@
+User-Agent: *
+Allow: /
+Disallow: /auth/
+Disallow: /candidate
+Disallow: /employer
+Disallow: /admin
+
+Host: https://nexusflowservices.com
