@@ -18,6 +18,9 @@ class UploadValidator
     /** Friendly message shown when a password-protected PDF is uploaded. */
     public const ENCRYPTED_PDF_MESSAGE = 'This PDF is password-protected. Please remove the password and upload again.';
 
+    /** Friendly message shown when the PDF's encryption status cannot be verified. */
+    public const UNVERIFIABLE_PDF_MESSAGE = 'We could not verify this PDF. Please try again.';
+
     /** @var list<string> */
     private const ACCEPTED_MIMES = ['image/jpeg', 'image/png', 'application/pdf'];
 
@@ -57,9 +60,22 @@ class UploadValidator
         if ($mime === 'application/pdf') {
             $path = $file->getRealPath();
 
-            if ($this->pdfInspector->isEncrypted($path) === true) {
+            // Fail CLOSED on the encryption check: only accept a PDF when qpdf
+            // confirms it is NOT encrypted (false). A true result is rejected as
+            // password-protected; a null result (qpdf missing/unreadable at
+            // runtime) is rejected as unverifiable so encrypted PDFs are never
+            // silently stored on a host without qpdf.
+            $encrypted = $this->pdfInspector->isEncrypted($path);
+
+            if ($encrypted === true) {
                 throw ValidationException::withMessages([
                     'file' => self::ENCRYPTED_PDF_MESSAGE,
+                ]);
+            }
+
+            if ($encrypted !== false) {
+                throw ValidationException::withMessages([
+                    'file' => self::UNVERIFIABLE_PDF_MESSAGE,
                 ]);
             }
 

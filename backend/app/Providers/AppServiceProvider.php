@@ -7,6 +7,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\ServiceProvider;
+use RuntimeException;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -20,7 +21,41 @@ class AppServiceProvider extends ServiceProvider
         // Surface N+1 queries and mass-assignment mistakes during development and tests.
         Model::shouldBeStrict(! $this->app->isProduction());
 
+        // Fail fast if a production deploy is running with insecure cookies.
+        if ($this->app->isProduction()) {
+            self::assertSecureSessionConfig();
+        }
+
         $this->configureRateLimiting();
+    }
+
+    /**
+     * Guard against a production boot with insecure session/cookie configuration.
+     *
+     * Gated on isProduction() by the caller so it never trips in local/testing.
+     * Extracted as a static method so a test can invoke it deterministically.
+     *
+     * @throws RuntimeException
+     */
+    public static function assertSecureSessionConfig(): void
+    {
+        if (config('session.secure') !== true) {
+            throw new RuntimeException(
+                'Insecure session configuration for production: SESSION_SECURE_COOKIE must be true.'
+            );
+        }
+
+        if (empty(config('session.domain'))) {
+            throw new RuntimeException(
+                'Insecure session configuration for production: SESSION_DOMAIN must be set.'
+            );
+        }
+
+        if (empty(array_filter((array) config('sanctum.stateful')))) {
+            throw new RuntimeException(
+                'Insecure session configuration for production: SANCTUM_STATEFUL_DOMAINS must be set.'
+            );
+        }
     }
 
     private function configureRateLimiting(): void

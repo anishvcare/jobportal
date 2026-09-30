@@ -2,6 +2,7 @@
 
 use App\Models\Document;
 use App\Models\User;
+use App\Services\Documents\PdfInspector;
 use App\Services\Documents\UploadValidator;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
@@ -61,6 +62,52 @@ it('records the page count for an uploaded pdf when qpdf is available', function
 
     $document = Document::firstOrFail();
     expect($document->page_count)->toBeGreaterThanOrEqual(1);
+});
+
+it('rejects a pdf when qpdf cannot verify encryption (fail closed)', function () {
+    // Fake PdfInspector so isEncrypted() returns null (qpdf missing/unreadable
+    // at runtime). The upload MUST be rejected rather than silently stored.
+    $this->mock(PdfInspector::class, function ($mock) {
+        $mock->shouldReceive('isEncrypted')->andReturn(null);
+        $mock->shouldReceive('pageCount')->andReturn(null);
+    });
+
+    $user = User::factory()->candidate()->create();
+
+    $tmp = tempnam(sys_get_temp_dir(), 'pdf').'.pdf';
+    file_put_contents($tmp, minimalPdf());
+    $file = new UploadedFile($tmp, 'doc.pdf', 'application/pdf', null, true);
+
+    actingAsUser($user)->postJson('/api/candidate/documents', [
+        'type' => 'profile_pdf',
+        'file' => $file,
+    ])
+        ->assertUnprocessable()
+        ->assertJsonFragment(['file' => [UploadValidator::UNVERIFIABLE_PDF_MESSAGE]]);
+
+    expect(Document::count())->toBe(0);
+});
+
+it('accepts a pdf when qpdf confirms it is not encrypted', function () {
+    // Fake PdfInspector so the happy path is deterministic without qpdf.
+    $this->mock(PdfInspector::class, function ($mock) {
+        $mock->shouldReceive('isEncrypted')->andReturn(false);
+        $mock->shouldReceive('pageCount')->andReturn(1);
+    });
+
+    $user = User::factory()->candidate()->create();
+
+    $tmp = tempnam(sys_get_temp_dir(), 'pdf').'.pdf';
+    file_put_contents($tmp, minimalPdf());
+    $file = new UploadedFile($tmp, 'doc.pdf', 'application/pdf', null, true);
+
+    actingAsUser($user)->postJson('/api/candidate/documents', [
+        'type' => 'profile_pdf',
+        'file' => $file,
+    ])->assertCreated();
+
+    expect(Document::count())->toBe(1);
+    expect(Document::firstOrFail()->page_count)->toBe(1);
 });
 
 it('rejects an encrypted pdf with the password-protected message', function () {
