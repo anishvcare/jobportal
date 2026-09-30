@@ -34,6 +34,23 @@ return [
     'qpdf_path' => env('QPDF_PATH', 'qpdf'),
 
     /*
+    | qpdf binary used by the merger and inspector. Defaults to QPDF_BINARY,
+    | falling back to the legacy QPDF_PATH so existing deployments keep
+    | working. On shared hosting (cPanel) qpdf is often a home-directory
+    | build that lives outside the system PATH: point QPDF_BINARY at that
+    | absolute path (e.g. /home/USER/bin/qpdf10/bin/qpdf).
+    */
+    'qpdf_binary' => env('QPDF_BINARY', env('QPDF_PATH', 'qpdf')),
+
+    /*
+    | Optional shared-library path for a home-directory qpdf build. When set
+    | it is exported as LD_LIBRARY_PATH on the qpdf child process only, so a
+    | self-compiled qpdf can find its own libqpdf .so files without touching
+    | the system loader configuration. Leave null to use the system loader.
+    */
+    'qpdf_library_path' => env('QPDF_LD_LIBRARY_PATH', null),
+
+    /*
     | Delay (seconds) before a queued candidate-pack rebuild runs after a
     | profile or document change. A small delay lets rapid successive edits
     | settle so the pack is usually ready before anyone asks for it.
