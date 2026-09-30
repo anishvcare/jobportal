@@ -13,6 +13,9 @@ use App\Http\Controllers\Api\Candidate\ExperienceController;
 use App\Http\Controllers\Api\Candidate\PackController;
 use App\Http\Controllers\Api\Candidate\ProfileController;
 use App\Http\Controllers\Api\Candidate\SelectionsController;
+use App\Http\Controllers\Api\Employer\ApplicantController as EmployerApplicantController;
+use App\Http\Controllers\Api\Employer\JobController as EmployerJobController;
+use App\Http\Controllers\Api\Employer\ProfileController as EmployerProfileController;
 use App\Http\Controllers\Api\OnboardingController;
 use App\Http\Controllers\Api\Public\LookupController;
 use Illuminate\Support\Facades\Route;
@@ -96,5 +99,34 @@ Route::middleware(['auth:sanctum', 'throttle:api'])->group(function () {
         Route::get('pack', [PackController::class, 'pack'])->middleware('throttle:downloads');
 
         Route::delete('account', [AccountController::class, 'destroy']);
+    });
+
+    Route::prefix('employer')->middleware('role:employer')->group(function () {
+        // Company profile + logo (public 'logos' disk, never 'documents').
+        Route::get('profile', [EmployerProfileController::class, 'show']);
+        Route::patch('profile', [EmployerProfileController::class, 'update']);
+        Route::post('profile/logo', [EmployerProfileController::class, 'uploadLogo'])
+            ->middleware('throttle:uploads');
+        Route::delete('profile/logo', [EmployerProfileController::class, 'deleteLogo']);
+
+        // Jobs. JobPost::getRouteKeyName() is 'slug' for public URLs, so the
+        // employer (and later admin) routes bind explicitly by id via
+        // {jobPost:id} to keep internal management routes on stable ids.
+        Route::get('jobs', [EmployerJobController::class, 'index']);
+        Route::post('jobs', [EmployerJobController::class, 'store']);
+        Route::get('jobs/{jobPost:id}', [EmployerJobController::class, 'show']);
+        Route::patch('jobs/{jobPost:id}', [EmployerJobController::class, 'update']);
+        Route::post('jobs/{jobPost:id}/publish', [EmployerJobController::class, 'publish']);
+        Route::post('jobs/{jobPost:id}/close', [EmployerJobController::class, 'close']);
+
+        // Applicants to the employer's own jobs.
+        Route::get('jobs/{jobPost:id}/applicants', [EmployerApplicantController::class, 'index']);
+        Route::patch('applications/{application}/status', [EmployerApplicantController::class, 'updateStatus']);
+        // Resume is the ONLY downloadable artifact for employers (audited).
+        Route::get('applications/{application}/resume', [EmployerApplicantController::class, 'resume'])
+            ->middleware('throttle:downloads');
+        // A photo thumbnail is a VIEW (not a download); higher-limit limiter.
+        Route::get('applications/{application}/photo', [EmployerApplicantController::class, 'photo'])
+            ->middleware('throttle:thumbnails');
     });
 });
