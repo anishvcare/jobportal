@@ -12,6 +12,7 @@ jobs:
       run:
         working-directory: backend
     services:
+      # Production runs MariaDB 10.6; the MySQL 8 service here is a compatibility proxy.
       mysql:
         image: mysql:8.0
         env:
@@ -28,7 +29,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: shivammathur/setup-php@v2
         with:
-          php-version: "8.4"
+          php-version: "8.2"
           extensions: gd, intl, pdo_mysql, pdo_sqlite, zip
           coverage: none
       - run: sudo apt-get update && sudo apt-get install -y qpdf

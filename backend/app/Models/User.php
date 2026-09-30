@@ -4,19 +4,21 @@ namespace App\Models;
 
 use App\Enums\Role;
 use Database\Factories\UserFactory;
-use Illuminate\Database\Eloquent\Attributes\Fillable;
-use Illuminate\Database\Eloquent\Attributes\Hidden;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 
-#[Fillable(['google_id', 'name', 'email', 'avatar_url', 'last_login_at'])]
-#[Hidden(['google_id', 'remember_token'])]
 class User extends Authenticatable
 {
     /** @use HasFactory<UserFactory> */
     use HasFactory, Notifiable;
+
+    /** @var list<string> */
+    protected $fillable = ['google_id', 'name', 'email', 'avatar_url', 'last_login_at'];
+
+    /** @var list<string> */
+    protected $hidden = ['google_id', 'remember_token'];
 
     /** @var array<string, mixed> */
     protected $attributes = [
