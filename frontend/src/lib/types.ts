@@ -140,6 +140,95 @@ export interface Completeness {
 }
 
 /* ------------------------------------------------------------------ *
+ * Public job board (Milestone 5): listing, detail, search + JSON-LD  *
+ * ------------------------------------------------------------------ */
+
+/** A compact job card on the public listing page (matches JobListResource). */
+export interface JobListItem {
+  id: number;
+  title: string;
+  slug: string;
+  company_name: string | null;
+  logo_url: string | null;
+  category: string | null;
+  location: string | null;
+  salary_min: number | null;
+  salary_max: number | null;
+  salary_currency: string | null;
+  experience_min: number | null;
+  experience_max: number | null;
+  deadline: string | null;
+  published_at: string | null;
+}
+
+/** hiringOrganization block on the job detail (matches JobDetailResource). */
+export interface JobHiringOrganization {
+  name: string | null;
+  logo_url: string | null;
+  website: string | null;
+}
+
+/** jobLocation block on the job detail (matches JobDetailResource). */
+export interface JobLocation {
+  city: string | null;
+  district: string | null;
+  state: string | null;
+  country: string | null;
+}
+
+/** baseSalary block on the job detail (matches JobDetailResource). */
+export interface JobBaseSalary {
+  min: number | null;
+  max: number | null;
+  currency: string | null;
+}
+
+/** Full public job detail (matches JobDetailResource, incl. JSON-LD fields). */
+export interface JobDetail {
+  id: number;
+  title: string;
+  slug: string;
+  description: string;
+  date_posted: string | null;
+  valid_through: string | null;
+  employment_type: string;
+  hiring_organization: JobHiringOrganization;
+  job_location: JobLocation;
+  base_salary: JobBaseSalary;
+  category: string | null;
+  category_slug: string | null;
+  education_level: string | null;
+  experience_min: number | null;
+  experience_max: number | null;
+  vacancies: number | null;
+  skills: ProfileSkill[];
+  deadline: string | null;
+  published_at: string | null;
+}
+
+/** Pagination meta returned by GET /api/public/jobs. */
+export interface JobsMeta {
+  current_page: number;
+  last_page: number;
+  per_page: number;
+  total: number;
+}
+
+/** Query parameters accepted by the public job board. */
+export interface JobSearchParams {
+  keyword?: string;
+  country_id?: string | number;
+  state_id?: string | number;
+  district_id?: string | number;
+  job_category_id?: string | number;
+  category?: string;
+  experience?: string | number;
+  salary_min?: string | number;
+  per_page?: string | number;
+  page?: string | number;
+}
+
+/* ------------------------------------------------------------------ *
  * Admin (Milestone 4): candidate search, detail, bulk export, audits *
  * ------------------------------------------------------------------ */
 

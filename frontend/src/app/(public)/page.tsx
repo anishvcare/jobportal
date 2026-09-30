@@ -1,12 +1,13 @@
 import Link from "next/link";
-import { getLookups } from "@/lib/server-api";
+import { getJobs, getLookups } from "@/lib/server-api";
 import { buttonClasses } from "@/components/ui/Button";
 
 export const revalidate = 300;
 
 export default async function HomePage() {
-  const lookups = await getLookups();
+  const [lookups, latest] = await Promise.all([getLookups(), getJobs({ per_page: 6 })]);
   const categories = lookups?.job_categories ?? [];
+  const latestJobs = latest?.data ?? [];
 
   return (
     <>
@@ -73,10 +74,28 @@ export default async function HomePage() {
             View all
           </Link>
         </div>
-        {/* Latest jobs are loaded from the public jobs API (added with the job board milestone). */}
-        <p className="mt-4 rounded-xl border border-dashed border-slate-300 bg-white p-6 text-center text-sm text-slate-500">
-          New jobs will appear here soon.
-        </p>
+        {latestJobs.length === 0 ? (
+          <p className="mt-4 rounded-xl border border-dashed border-slate-300 bg-white p-6 text-center text-sm text-slate-500">
+            New jobs will appear here soon.
+          </p>
+        ) : (
+          <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+            {latestJobs.map((job) => (
+              <Link
+                key={job.id}
+                href={`/jobs/${job.slug}`}
+                className="block rounded-xl border border-slate-200 bg-white p-4 shadow-sm transition-colors hover:border-brand-300 hover:bg-brand-50/40"
+              >
+                <h3 className="truncate font-semibold text-slate-900">{job.title}</h3>
+                <p className="mt-0.5 text-sm text-slate-600">
+                  {job.company_name ?? "Confidential employer"}
+                  {job.location ? ` · ${job.location}` : ""}
+                </p>
+                {job.category && <p className="mt-2 text-xs font-medium text-slate-500">{job.category}</p>}
+              </Link>
+            ))}
+          </div>
+        )}
       </section>
     </>
   );
