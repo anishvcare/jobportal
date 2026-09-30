@@ -61,7 +61,25 @@ class StoreJobRequest extends FormRequest
 
             'skill_ids' => ['nullable', 'array'],
             'skill_ids.*' => ['integer', Rule::exists('skills', 'id')],
+
+            // Free-text skills, created on the fly (mirrors the candidate flow).
+            'skills' => ['nullable', 'array', 'max:50'],
+            'skills.*' => ['required', 'string', 'max:60'],
         ];
+    }
+
+    protected function prepareForValidation(): void
+    {
+        $skills = $this->input('skills');
+
+        if (is_array($skills)) {
+            $this->merge([
+                'skills' => array_values(array_filter(array_map(
+                    fn ($skill) => is_string($skill) ? trim($skill) : $skill,
+                    $skills,
+                ), fn ($skill) => $skill !== '' && $skill !== null)),
+            ]);
+        }
     }
 
     /**

@@ -9,6 +9,7 @@ use App\Http\Requests\Employer\UpdateJobRequest;
 use App\Http\Resources\Employer\JobPostResource;
 use App\Models\EmployerProfile;
 use App\Models\JobPost;
+use App\Services\Candidate\SkillResolver;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
@@ -56,17 +57,18 @@ class JobController extends Controller
         ]);
     }
 
-    public function store(StoreJobRequest $request): JsonResponse
+    public function store(StoreJobRequest $request, SkillResolver $resolver): JsonResponse
     {
         $profile = $this->resolveProfile($request);
 
-        $data = $request->safe()->except('skill_ids');
+        $data = $request->safe()->except(['skill_ids', 'skills']);
         $data['slug'] = $this->uniqueSlug($request->string('title'));
         $data['vacancies'] = $data['vacancies'] ?? 1;
 
         $job = $profile->jobPosts()->create($data);
 
-        if (is_array($skillIds = $request->input('skill_ids'))) {
+        $skillIds = $this->resolveSkillIds($request, $resolver);
+        if ($skillIds !== null) {
             $job->skills()->sync($skillIds);
         }
 
@@ -86,15 +88,16 @@ class JobController extends Controller
         return new JobPostResource($jobPost);
     }
 
-    public function update(UpdateJobRequest $request, JobPost $jobPost): JobPostResource
+    public function update(UpdateJobRequest $request, JobPost $jobPost, SkillResolver $resolver): JobPostResource
     {
         $this->authorize('update', $jobPost);
 
-        $jobPost->fill($request->safe()->except('skill_ids'));
+        $jobPost->fill($request->safe()->except(['skill_ids', 'skills']));
         $jobPost->save();
 
-        if ($request->has('skill_ids')) {
-            $jobPost->skills()->sync($request->input('skill_ids') ?? []);
+        $skillIds = $this->resolveSkillIds($request, $resolver);
+        if ($skillIds !== null) {
+            $jobPost->skills()->sync($skillIds);
         }
 
         $jobPost->load(self::RELATIONS)->loadCount('applications');
@@ -145,6 +148,28 @@ class JobController extends Controller
         $jobPost->load(self::RELATIONS)->loadCount('applications');
 
         return new JobPostResource($jobPost);
+    }
+
+    /**
+     * Resolve the skill ids to sync from the request, or null when the request
+     * carries no skills field (so the current attachments are left untouched).
+     *
+     * Free-text `skills` (names, created on the fly) take precedence over the
+     * id-based `skill_ids` when both are present.
+     *
+     * @return array<int, int>|null
+     */
+    private function resolveSkillIds(Request $request, SkillResolver $resolver): ?array
+    {
+        if ($request->has('skills')) {
+            return $resolver->resolve($request->input('skills') ?? []);
+        }
+
+        if ($request->has('skill_ids')) {
+            return array_map('intval', $request->input('skill_ids') ?? []);
+        }
+
+        return null;
     }
 
     /**

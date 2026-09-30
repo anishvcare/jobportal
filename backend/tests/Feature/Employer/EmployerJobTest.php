@@ -51,6 +51,42 @@ it('lets an employer create a job with a trade category', function () {
         ->assertJsonPath('data.status', 'draft');
 });
 
+it('creates a job with free-text skills, creating them on the fly', function () {
+    [$user] = makeEmployer('approved');
+    $trade = JobCategory::factory()->create();
+
+    actingAsUser($user)->postJson('/api/employer/jobs', [
+        'title' => 'Site Electrician',
+        'description' => 'Wire up new builds.',
+        'job_category_id' => $trade->id,
+        'skills' => ['Welding', ' Wiring ', 'welding'],
+    ])
+        ->assertCreated()
+        ->assertJsonCount(2, 'data.skills')
+        ->assertJsonPath('data.skills.0.name', 'Welding');
+
+    $this->assertDatabaseHas('skills', ['name' => 'Welding']);
+    $this->assertDatabaseHas('skills', ['name' => 'Wiring']);
+});
+
+it('replaces a job\'s skills by name on update', function () {
+    [$user, $profile] = makeEmployer('approved');
+    $job = JobPost::factory()->create(['employer_profile_id' => $profile->id]);
+
+    actingAsUser($user)->patchJson("/api/employer/jobs/{$job->id}", [
+        'skills' => ['Plumbing'],
+    ])
+        ->assertOk()
+        ->assertJsonCount(1, 'data.skills')
+        ->assertJsonPath('data.skills.0.name', 'Plumbing');
+
+    actingAsUser($user)->patchJson("/api/employer/jobs/{$job->id}", [
+        'skills' => [],
+    ])
+        ->assertOk()
+        ->assertJsonCount(0, 'data.skills');
+});
+
 it('rejects a job whose category is a group, not a trade', function () {
     [$user] = makeEmployer('approved');
     $group = JobCategory::factory()->group()->create();
