@@ -6,6 +6,7 @@ import { ApplicationStatusBadge } from "@/components/employer/StatusBadges";
 import { Alert } from "@/components/ui/Alert";
 import { Button, ButtonLink } from "@/components/ui/Button";
 import { Card, PageHeader } from "@/components/ui/Card";
+import { ErrorState } from "@/components/ui/ErrorState";
 import { PageLoader } from "@/components/ui/Spinner";
 import { useMyApplications, withdrawApplication } from "@/lib/candidate";
 import { errorMessage } from "@/lib/errors";
@@ -45,7 +46,7 @@ export default function MyApplicationsPage() {
       {actionError && <div className="mb-4"><Alert tone="error">{actionError}</Alert></div>}
 
       {error ? (
-        <Alert tone="error">{errorMessage(error)}</Alert>
+        <ErrorState error={error} onRetry={() => void mutate()} />
       ) : isLoading && applications.length === 0 ? (
         <PageLoader label="Loading your applications…" />
       ) : applications.length === 0 ? (

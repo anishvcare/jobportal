@@ -174,7 +174,13 @@ export function PersonalStep({
       </Field>
 
       <StepError message={error} />
-      <StepFooter step={step} totalSteps={totalSteps} onBack={onBack} status={<SaveStatus state={state} />} />
+      <StepFooter
+        step={step}
+        totalSteps={totalSteps}
+        onBack={onBack}
+        submitting={state === "saving"}
+        status={<SaveStatus state={state} />}
+      />
     </form>
   );
 }

@@ -196,6 +196,7 @@ interface UseDownloadAuditsResult {
   meta: PaginationMeta | undefined;
   isLoading: boolean;
   error: unknown;
+  mutate: KeyedMutator<AuditEnvelope>;
 }
 
 /** SWR hook for the paginated download-audit log. */
@@ -208,12 +209,12 @@ export function useDownloadAudits(params: AuditParams): UseDownloadAuditsResult 
   const query = search.toString();
   const key = query ? `/admin/download-audits?${query}` : "/admin/download-audits";
 
-  const { data, error, isLoading } = useSWR<AuditEnvelope>(key, auditFetcher, {
+  const { data, error, isLoading, mutate } = useSWR<AuditEnvelope>(key, auditFetcher, {
     revalidateOnFocus: false,
     keepPreviousData: true,
   });
 
-  return { audits: data?.data ?? [], meta: data?.meta, isLoading, error };
+  return { audits: data?.data ?? [], meta: data?.meta, isLoading, error, mutate };
 }
 
 /* ------------------------------------------------------------------ *

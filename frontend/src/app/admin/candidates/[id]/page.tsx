@@ -8,6 +8,7 @@ import { AdminPhoto } from "@/components/admin/AdminPhoto";
 import { Alert } from "@/components/ui/Alert";
 import { Button, ButtonLink } from "@/components/ui/Button";
 import { Card, PageHeader } from "@/components/ui/Card";
+import { ErrorState } from "@/components/ui/ErrorState";
 import { PageLoader } from "@/components/ui/Spinner";
 import { downloadAdminDocument, useCandidateDetail } from "@/lib/admin";
 import { errorMessage, httpStatus } from "@/lib/errors";
@@ -67,7 +68,7 @@ export default function AdminCandidateDetailPage() {
   const id = Number(params.id);
   const validId = Number.isFinite(id) && id > 0 ? id : null;
 
-  const { candidate, isLoading, error } = useCandidateDetail(validId);
+  const { candidate, isLoading, error, mutate } = useCandidateDetail(validId);
 
   const backLink = (
     <ButtonLink href="/admin/candidates" variant="ghost">
@@ -81,7 +82,11 @@ export default function AdminCandidateDetailPage() {
       <>
         <AdminNav />
         <div className="mb-4">{backLink}</div>
-        <Alert tone="error">{status === 404 ? "That candidate could not be found." : errorMessage(error)}</Alert>
+        {status === 404 ? (
+          <Alert tone="error">That candidate could not be found.</Alert>
+        ) : (
+          <ErrorState error={error} onRetry={() => void mutate()} />
+        )}
       </>
     );
   }
