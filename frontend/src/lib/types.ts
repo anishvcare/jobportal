@@ -52,7 +52,14 @@ export interface AdminDashboard {
   candidates: number;
   employers: number;
   pending_onboarding: number;
+  jobs: number;
+  live_jobs: number;
+  applications: number;
+  employers_pending: number;
 }
+
+/** Application lifecycle status shared across employer/candidate/admin views. */
+export type ApplicationStatus = "applied" | "shortlisted" | "rejected" | "selected";
 
 /** A state/province returned by the lookup endpoint for a country. */
 export interface StateOption {
@@ -137,6 +144,95 @@ export interface Completeness {
   required: string[];
   has_profile_pdf: boolean;
   pack_ready: boolean;
+}
+
+/* ------------------------------------------------------------------ *
+ * Public job board (Milestone 5): listing, detail, search + JSON-LD  *
+ * ------------------------------------------------------------------ */
+
+/** A compact job card on the public listing page (matches JobListResource). */
+export interface JobListItem {
+  id: number;
+  title: string;
+  slug: string;
+  company_name: string | null;
+  logo_url: string | null;
+  category: string | null;
+  location: string | null;
+  salary_min: number | null;
+  salary_max: number | null;
+  salary_currency: string | null;
+  experience_min: number | null;
+  experience_max: number | null;
+  deadline: string | null;
+  published_at: string | null;
+}
+
+/** hiringOrganization block on the job detail (matches JobDetailResource). */
+export interface JobHiringOrganization {
+  name: string | null;
+  logo_url: string | null;
+  website: string | null;
+}
+
+/** jobLocation block on the job detail (matches JobDetailResource). */
+export interface JobLocation {
+  city: string | null;
+  district: string | null;
+  state: string | null;
+  country: string | null;
+}
+
+/** baseSalary block on the job detail (matches JobDetailResource). */
+export interface JobBaseSalary {
+  min: number | null;
+  max: number | null;
+  currency: string | null;
+}
+
+/** Full public job detail (matches JobDetailResource, incl. JSON-LD fields). */
+export interface JobDetail {
+  id: number;
+  title: string;
+  slug: string;
+  description: string;
+  date_posted: string | null;
+  valid_through: string | null;
+  employment_type: string;
+  hiring_organization: JobHiringOrganization;
+  job_location: JobLocation;
+  base_salary: JobBaseSalary;
+  category: string | null;
+  category_slug: string | null;
+  education_level: string | null;
+  experience_min: number | null;
+  experience_max: number | null;
+  vacancies: number | null;
+  skills: ProfileSkill[];
+  deadline: string | null;
+  published_at: string | null;
+}
+
+/** Pagination meta returned by GET /api/public/jobs. */
+export interface JobsMeta {
+  current_page: number;
+  last_page: number;
+  per_page: number;
+  total: number;
+}
+
+/** Query parameters accepted by the public job board. */
+export interface JobSearchParams {
+  keyword?: string;
+  country_id?: string | number;
+  state_id?: string | number;
+  district_id?: string | number;
+  job_category_id?: string | number;
+  category?: string;
+  experience?: string | number;
+  salary_min?: string | number;
+  per_page?: string | number;
+  page?: string | number;
 }
 
 /* ------------------------------------------------------------------ *
@@ -313,4 +409,159 @@ export interface CandidateProfile {
   preferred_countries: NamedItem[];
   documents: DocumentDto[];
   completeness: Completeness;
+}
+
+/* ------------------------------------------------------------------ *
+ * Employer area (Milestone 5)                                        *
+ * ------------------------------------------------------------------ */
+
+export type EmployerStatus = "pending" | "approved" | "suspended";
+
+/** The employer's own company profile (matches EmployerProfileResource). */
+export interface EmployerProfile {
+  id: number;
+  company_name: string | null;
+  contact_person: string | null;
+  phone: string | null;
+  website: string | null;
+  country_id: number | null;
+  state_id: number | null;
+  district_id: number | null;
+  city: string | null;
+  country: string | null;
+  state: string | null;
+  district: string | null;
+  status: EmployerStatus;
+  approved_at: string | null;
+  logo_url: string | null;
+}
+
+export type JobStatus = "draft" | "published" | "hidden" | "expired" | "closed";
+
+/** A job owned by the current employer (matches JobPostResource). */
+export interface EmployerJob {
+  id: number;
+  title: string;
+  slug: string;
+  description: string;
+  job_category_id: number | null;
+  category: string | null;
+  country_id: number | null;
+  state_id: number | null;
+  district_id: number | null;
+  city: string | null;
+  country: string | null;
+  state: string | null;
+  district: string | null;
+  education_level_id: number | null;
+  education_level: string | null;
+  experience_min: number | null;
+  experience_max: number | null;
+  vacancies: number | null;
+  salary_min: number | null;
+  salary_max: number | null;
+  salary_currency: string | null;
+  deadline: string | null;
+  published_at: string | null;
+  is_hidden: boolean;
+  closed_at: string | null;
+  is_live: boolean;
+  status: JobStatus;
+  skills: ProfileSkill[];
+  application_count: number;
+  created_at: string | null;
+}
+
+/** An applicant to one of the employer's jobs (matches ApplicantResource). */
+export interface Applicant {
+  id: number;
+  status: ApplicationStatus;
+  cover_note: string | null;
+  created_at: string | null;
+  candidate: {
+    id: number;
+    full_name: string | null;
+    age: number | null;
+    phone: string | null;
+    district: string | null;
+    trades: string[] | null;
+    /** Relative API path (e.g. "/api/employer/applications/12/photo") or null. */
+    photo_url: string | null;
+  };
+}
+
+/* ------------------------------------------------------------------ *
+ * Candidate "My applications" (Milestone 5)                          *
+ * ------------------------------------------------------------------ */
+
+/** One of the candidate's own applications (matches CandidateApplicationResource). */
+export interface MyApplication {
+  id: number;
+  status: ApplicationStatus;
+  cover_note: string | null;
+  created_at: string | null;
+  job: {
+    id: number;
+    title: string;
+    slug: string;
+    company_name: string | null;
+    is_live: boolean;
+    closed: boolean;
+  } | null;
+}
+
+/* ------------------------------------------------------------------ *
+ * Admin management (Milestone 5)                                     *
+ * ------------------------------------------------------------------ */
+
+/** A row in the admin employers list (matches EmployerResource). */
+export interface AdminEmployer {
+  id: number;
+  company_name: string | null;
+  contact_person: string | null;
+  phone: string | null;
+  website: string | null;
+  city: string | null;
+  country: string | null;
+  state: string | null;
+  district: string | null;
+  status: EmployerStatus;
+  approved_at: string | null;
+  user: { id: number; name: string; email: string } | null;
+  job_count: number;
+  created_at: string | null;
+}
+
+/** A row in the admin jobs list (matches AdminJobResource). */
+export interface AdminJob {
+  id: number;
+  title: string;
+  slug: string;
+  city: string | null;
+  category: string | null;
+  country: string | null;
+  vacancies: number | null;
+  deadline: string | null;
+  published_at: string | null;
+  is_hidden: boolean;
+  closed_at: string | null;
+  is_live: boolean;
+  status: JobStatus;
+  employer: { id: number; company_name: string | null; status: EmployerStatus } | null;
+  application_count: number;
+  created_at: string | null;
+}
+
+/** A row in the admin applications list (matches AdminApplicationResource). */
+export interface AdminApplication {
+  id: number;
+  status: ApplicationStatus;
+  cover_note: string | null;
+  created_at: string | null;
+  job: { id: number; title: string; slug: string } | null;
+  candidate: {
+    id: number;
+    full_name: string | null;
+    user: { id: number; name: string; email: string } | null;
+  } | null;
 }

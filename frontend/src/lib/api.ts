@@ -62,3 +62,24 @@ export async function fetcher<T>(url: string): Promise<T> {
   const response = await api.get<{ data: T }>(url);
   return response.data.data;
 }
+
+/**
+ * Fetch a private file from the given API endpoint as a blob and trigger a
+ * browser download with the supplied filename. Goes through the shared api
+ * client so cookies, XSRF handling and the 419 retry all apply.
+ */
+export async function downloadFile(path: string, filename: string): Promise<void> {
+  const { data } = await api.get<Blob>(path, { responseType: "blob" });
+  const url = URL.createObjectURL(data);
+  try {
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = filename;
+    link.rel = "noopener";
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+  } finally {
+    URL.revokeObjectURL(url);
+  }
+}

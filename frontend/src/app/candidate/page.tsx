@@ -22,8 +22,8 @@ const STEPS = [
   {
     title: "Apply to jobs",
     text: "Apply in one tap and track your application status.",
-    href: "/candidate/profile",
-    cta: "Get ready",
+    href: "/candidate/applications",
+    cta: "My applications",
   },
 ];
 
@@ -36,7 +36,16 @@ export default function CandidateDashboard() {
       <PageHeader
         title={`Hello, ${user?.name.split(" ")[0] ?? ""}`}
         description="Here's how to get ready for your next job."
-        actions={<ButtonLink href="/candidate/settings" variant="secondary">Settings</ButtonLink>}
+        actions={
+          <div className="flex gap-2">
+            <ButtonLink href="/candidate/applications" variant="secondary">
+              My applications
+            </ButtonLink>
+            <ButtonLink href="/candidate/settings" variant="secondary">
+              Settings
+            </ButtonLink>
+          </div>
+        }
       />
 
       <div className="grid gap-6 lg:grid-cols-[1fr_18rem]">

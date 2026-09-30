@@ -1,19 +1,28 @@
 <?php
 
+use App\Http\Controllers\Api\Admin\ApplicationController as AdminApplicationController;
 use App\Http\Controllers\Api\Admin\CandidateController as AdminCandidateController;
 use App\Http\Controllers\Api\Admin\CandidateDownloadController as AdminCandidateDownloadController;
 use App\Http\Controllers\Api\Admin\CandidateExportController as AdminCandidateExportController;
 use App\Http\Controllers\Api\Admin\DashboardController as AdminDashboardController;
 use App\Http\Controllers\Api\Admin\DownloadAuditController as AdminDownloadAuditController;
+use App\Http\Controllers\Api\Admin\EmployerController as AdminEmployerController;
+use App\Http\Controllers\Api\Admin\JobController as AdminJobController;
+use App\Http\Controllers\Api\Admin\LookupController as AdminLookupController;
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\Candidate\AccountController;
+use App\Http\Controllers\Api\Candidate\ApplicationController as CandidateApplicationController;
 use App\Http\Controllers\Api\Candidate\DocumentController;
 use App\Http\Controllers\Api\Candidate\EducationController;
 use App\Http\Controllers\Api\Candidate\ExperienceController;
 use App\Http\Controllers\Api\Candidate\PackController;
 use App\Http\Controllers\Api\Candidate\ProfileController;
 use App\Http\Controllers\Api\Candidate\SelectionsController;
+use App\Http\Controllers\Api\Employer\ApplicantController as EmployerApplicantController;
+use App\Http\Controllers\Api\Employer\JobController as EmployerJobController;
+use App\Http\Controllers\Api\Employer\ProfileController as EmployerProfileController;
 use App\Http\Controllers\Api\OnboardingController;
+use App\Http\Controllers\Api\Public\JobController as PublicJobController;
 use App\Http\Controllers\Api\Public\LookupController;
 use Illuminate\Support\Facades\Route;
 
@@ -24,6 +33,11 @@ Route::prefix('public')->middleware('throttle:public')->group(function () {
     Route::get('lookups', [LookupController::class, 'index']);
     Route::get('countries/{country}/states', [LookupController::class, 'states']);
     Route::get('states/{state}/districts', [LookupController::class, 'districts']);
+
+    // Public job board. Detail binds by slug (JobPost's default route key) and
+    // 404s for any non-live job. Responses are tagged public + cacheable.
+    Route::get('jobs', [PublicJobController::class, 'index']);
+    Route::get('jobs/{jobPost:slug}', [PublicJobController::class, 'show']);
 });
 
 /*
@@ -64,6 +78,34 @@ Route::middleware(['auth:sanctum', 'throttle:api'])->group(function () {
         Route::get('candidate-exports/{export}', [AdminCandidateExportController::class, 'show']);
         Route::get('candidate-exports/{export}/download', [AdminCandidateExportController::class, 'download'])
             ->middleware('throttle:downloads');
+
+        // Employer management.
+        Route::get('employers', [AdminEmployerController::class, 'index']);
+        Route::get('employers/{employerProfile}', [AdminEmployerController::class, 'show']);
+        Route::post('employers/{employerProfile}/approve', [AdminEmployerController::class, 'approve']);
+        Route::post('employers/{employerProfile}/suspend', [AdminEmployerController::class, 'suspend']);
+
+        // Job management. Bind {jobPost:id} (FEAT-002 route-key decision).
+        Route::get('jobs', [AdminJobController::class, 'index']);
+        Route::post('jobs/{jobPost:id}/hide', [AdminJobController::class, 'hide']);
+        Route::post('jobs/{jobPost:id}/unhide', [AdminJobController::class, 'unhide']);
+        Route::post('jobs/{jobPost:id}/close', [AdminJobController::class, 'close']);
+
+        // Application management.
+        Route::get('applications', [AdminApplicationController::class, 'index']);
+        Route::patch('applications/{application}/status', [AdminApplicationController::class, 'updateStatus']);
+
+        // Lookup-list management: job categories, countries, education levels.
+        Route::post('lookups/job-categories', [AdminLookupController::class, 'storeJobCategory']);
+        Route::patch('lookups/job-categories/{jobCategory}', [AdminLookupController::class, 'updateJobCategory']);
+        Route::post('lookups/job-categories/{jobCategory}/toggle', [AdminLookupController::class, 'toggleJobCategory']);
+
+        Route::post('lookups/countries', [AdminLookupController::class, 'storeCountry']);
+        Route::post('lookups/countries/{country}/toggle', [AdminLookupController::class, 'toggleCountry']);
+
+        Route::post('lookups/education-levels', [AdminLookupController::class, 'storeEducationLevel']);
+        Route::patch('lookups/education-levels/reorder', [AdminLookupController::class, 'reorderEducationLevels']);
+        Route::patch('lookups/education-levels/{educationLevel}', [AdminLookupController::class, 'updateEducationLevel']);
     });
 
     Route::prefix('candidate')->middleware('role:candidate')->group(function () {
@@ -95,6 +137,41 @@ Route::middleware(['auth:sanctum', 'throttle:api'])->group(function () {
         Route::get('resume', [PackController::class, 'resume'])->middleware('throttle:downloads');
         Route::get('pack', [PackController::class, 'pack'])->middleware('throttle:downloads');
 
+        // Applications. {jobPost} binds by slug (JobPost's default route key)
+        // to match the public job URLs; login is required only to apply.
+        Route::post('jobs/{jobPost}/apply', [CandidateApplicationController::class, 'store']);
+        Route::get('applications', [CandidateApplicationController::class, 'index']);
+        Route::delete('applications/{application}', [CandidateApplicationController::class, 'destroy']);
+
         Route::delete('account', [AccountController::class, 'destroy']);
+    });
+
+    Route::prefix('employer')->middleware('role:employer')->group(function () {
+        // Company profile + logo (public 'logos' disk, never 'documents').
+        Route::get('profile', [EmployerProfileController::class, 'show']);
+        Route::patch('profile', [EmployerProfileController::class, 'update']);
+        Route::post('profile/logo', [EmployerProfileController::class, 'uploadLogo'])
+            ->middleware('throttle:uploads');
+        Route::delete('profile/logo', [EmployerProfileController::class, 'deleteLogo']);
+
+        // Jobs. JobPost::getRouteKeyName() is 'slug' for public URLs, so the
+        // employer (and later admin) routes bind explicitly by id via
+        // {jobPost:id} to keep internal management routes on stable ids.
+        Route::get('jobs', [EmployerJobController::class, 'index']);
+        Route::post('jobs', [EmployerJobController::class, 'store']);
+        Route::get('jobs/{jobPost:id}', [EmployerJobController::class, 'show']);
+        Route::patch('jobs/{jobPost:id}', [EmployerJobController::class, 'update']);
+        Route::post('jobs/{jobPost:id}/publish', [EmployerJobController::class, 'publish']);
+        Route::post('jobs/{jobPost:id}/close', [EmployerJobController::class, 'close']);
+
+        // Applicants to the employer's own jobs.
+        Route::get('jobs/{jobPost:id}/applicants', [EmployerApplicantController::class, 'index']);
+        Route::patch('applications/{application}/status', [EmployerApplicantController::class, 'updateStatus']);
+        // Resume is the ONLY downloadable artifact for employers (audited).
+        Route::get('applications/{application}/resume', [EmployerApplicantController::class, 'resume'])
+            ->middleware('throttle:downloads');
+        // A photo thumbnail is a VIEW (not a download); higher-limit limiter.
+        Route::get('applications/{application}/photo', [EmployerApplicantController::class, 'photo'])
+            ->middleware('throttle:thumbnails');
     });
 });

@@ -3,7 +3,7 @@
 import { useMemo } from "react";
 import { Button } from "@/components/ui/Button";
 import { Field, Select, TextInput } from "@/components/ui/Field";
-import { useDistricts, useLookups, useStates } from "@/lib/admin";
+import { useAdminJobs, useDistricts, useLookups, useStates } from "@/lib/admin";
 import type { CandidateSearchParams } from "@/lib/admin";
 
 /** Convert an input value to a number filter, or undefined when blank. */
@@ -35,6 +35,8 @@ export function CandidateFilters({
   const { lookups } = useLookups();
   const { states } = useStates(countryId);
   const { districts } = useDistricts(filters.state_id ?? null);
+  // Populate the "applied to job" filter from the admin jobs list.
+  const { jobs } = useAdminJobs({ per_page: 100 });
 
   // Flatten trades from the grouped job categories for the trade select.
   const tradeGroups = lookups?.job_categories ?? [];
@@ -208,6 +210,21 @@ export function CandidateFilters({
           value={filters.completeness_min ?? ""}
           onChange={(e) => onChange({ completeness_min: num(e.target.value) })}
         />
+      </Field>
+
+      <Field label="Applied to job" htmlFor="f-applied-job">
+        <Select
+          id="f-applied-job"
+          value={filters.applied_job_id ?? ""}
+          onChange={(e) => onChange({ applied_job_id: num(e.target.value) })}
+        >
+          <option value="">Any</option>
+          {jobs.map((job) => (
+            <option key={job.id} value={job.id}>
+              {job.title}
+            </option>
+          ))}
+        </Select>
       </Field>
 
       <Field label="Languages" htmlFor="f-languages">

@@ -11,6 +11,10 @@ import type { AdminDashboard } from "@/lib/types";
 const STATS: { key: keyof AdminDashboard; label: string }[] = [
   { key: "candidates", label: "Candidates" },
   { key: "employers", label: "Employers" },
+  { key: "employers_pending", label: "Employers pending approval" },
+  { key: "jobs", label: "Jobs" },
+  { key: "live_jobs", label: "Live jobs" },
+  { key: "applications", label: "Applications" },
   { key: "pending_onboarding", label: "Signed up, no role yet" },
 ];
 
