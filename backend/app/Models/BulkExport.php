@@ -14,13 +14,13 @@ class BulkExport extends Model
     /** @use HasFactory<BulkExportFactory> */
     use HasFactory;
 
-    public const string STATUS_QUEUED = 'queued';
+    public const STATUS_QUEUED = 'queued';
 
-    public const string STATUS_PROCESSING = 'processing';
+    public const STATUS_PROCESSING = 'processing';
 
-    public const string STATUS_READY = 'ready';
+    public const STATUS_READY = 'ready';
 
-    public const string STATUS_FAILED = 'failed';
+    public const STATUS_FAILED = 'failed';
 
     /**
      * `progress` is a 0-100 percent value (not a candidate count): the build

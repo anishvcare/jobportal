@@ -12,13 +12,13 @@ class DownloadAudit extends Model
     /** @use HasFactory<DownloadAuditFactory> */
     use HasFactory;
 
-    public const string KIND_DOCUMENT = 'document';
+    public const KIND_DOCUMENT = 'document';
 
-    public const string KIND_RESUME = 'resume';
+    public const KIND_RESUME = 'resume';
 
-    public const string KIND_PACK = 'pack';
+    public const KIND_PACK = 'pack';
 
-    public const string KIND_BULK_ZIP = 'bulk_zip';
+    public const KIND_BULK_ZIP = 'bulk_zip';
 
     protected $fillable = [
         'actor_user_id',
