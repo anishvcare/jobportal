@@ -9,6 +9,7 @@ import type {
   Education,
   Experience,
   Lookups,
+  MyApplication,
   StateOption,
 } from "./types";
 
@@ -228,4 +229,33 @@ export function downloadResume(): Promise<void> {
 /** Download the candidate's full Candidate Pack PDF (GET /candidate/pack). */
 export function downloadCandidatePack(): Promise<void> {
   return downloadPdf("/candidate/pack", "candidate-pack.pdf");
+}
+
+/* ------------------------------------------------------------------ *
+ * My applications (Milestone 5)                                      *
+ * ------------------------------------------------------------------ */
+
+export const MY_APPLICATIONS_KEY = "/candidate/applications";
+
+interface UseMyApplicationsResult {
+  applications: MyApplication[];
+  isLoading: boolean;
+  error: unknown;
+  mutate: KeyedMutator<MyApplication[]>;
+}
+
+/** SWR hook for the candidate's own applications (not paginated). */
+export function useMyApplications(): UseMyApplicationsResult {
+  const { data, error, isLoading, mutate } = useSWR<MyApplication[]>(
+    MY_APPLICATIONS_KEY,
+    fetcher<MyApplication[]>,
+    { revalidateOnFocus: false },
+  );
+  return { applications: data ?? [], isLoading, error, mutate };
+}
+
+/** Withdraw (delete) one of the candidate's applications. */
+export async function withdrawApplication(id: number): Promise<void> {
+  await api.delete(`${MY_APPLICATIONS_KEY}/${id}`);
+  void globalMutate(MY_APPLICATIONS_KEY);
 }
