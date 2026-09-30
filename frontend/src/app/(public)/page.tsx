@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { getJobs, getLookups } from "@/lib/server-api";
 import { buttonClasses } from "@/components/ui/Button";
+import { InstallPrompt } from "@/components/pwa/InstallPrompt";
 
 export const revalidate = 300;
 
@@ -45,6 +46,10 @@ export default async function HomePage() {
           </form>
         </div>
       </section>
+
+      <div className="mx-auto max-w-6xl px-4 empty:hidden [&:has(aside)]:pt-6">
+        <InstallPrompt />
+      </div>
 
       <section className="mx-auto grid max-w-6xl gap-4 px-4 py-8 sm:grid-cols-2">
         <div className="rounded-xl border border-slate-200 bg-white p-6">
