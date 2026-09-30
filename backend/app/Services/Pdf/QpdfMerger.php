@@ -38,7 +38,7 @@ class QpdfMerger
         $arguments[] = '--';
         $arguments[] = $outAbsolutePath;
 
-        $process = new Process($arguments);
+        $process = $this->newProcess($arguments);
 
         try {
             $process->run();
@@ -64,7 +64,7 @@ class QpdfMerger
      */
     public function isAvailable(): bool
     {
-        $process = new Process([$this->binary(), '--version']);
+        $process = $this->newProcess([$this->binary(), '--version']);
 
         try {
             $process->run();
@@ -77,6 +77,35 @@ class QpdfMerger
 
     private function binary(): string
     {
-        return (string) config('nexus.qpdf_path', 'qpdf');
+        return (string) config('nexus.qpdf_binary', 'qpdf');
+    }
+
+    /**
+     * Build a qpdf Process. When a qpdf library path is configured it is
+     * exported as LD_LIBRARY_PATH on the child process only (merged with the
+     * inherited environment); otherwise no env override is applied so the
+     * behaviour is byte-identical to invoking qpdf directly.
+     *
+     * @param  list<string>  $arguments
+     */
+    private function newProcess(array $arguments): Process
+    {
+        return new Process($arguments, null, $this->processEnv());
+    }
+
+    /**
+     * Environment overrides for the qpdf child process, or null when none.
+     *
+     * @return array<string, string>|null
+     */
+    private function processEnv(): ?array
+    {
+        $libraryPath = config('nexus.qpdf_library_path');
+
+        if (is_string($libraryPath) && $libraryPath !== '') {
+            return ['LD_LIBRARY_PATH' => $libraryPath];
+        }
+
+        return null;
     }
 }
