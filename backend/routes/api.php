@@ -1,10 +1,14 @@
 <?php
 
+use App\Http\Controllers\Api\Admin\ApplicationController as AdminApplicationController;
 use App\Http\Controllers\Api\Admin\CandidateController as AdminCandidateController;
 use App\Http\Controllers\Api\Admin\CandidateDownloadController as AdminCandidateDownloadController;
 use App\Http\Controllers\Api\Admin\CandidateExportController as AdminCandidateExportController;
 use App\Http\Controllers\Api\Admin\DashboardController as AdminDashboardController;
 use App\Http\Controllers\Api\Admin\DownloadAuditController as AdminDownloadAuditController;
+use App\Http\Controllers\Api\Admin\EmployerController as AdminEmployerController;
+use App\Http\Controllers\Api\Admin\JobController as AdminJobController;
+use App\Http\Controllers\Api\Admin\LookupController as AdminLookupController;
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\Candidate\AccountController;
 use App\Http\Controllers\Api\Candidate\ApplicationController as CandidateApplicationController;
@@ -74,6 +78,34 @@ Route::middleware(['auth:sanctum', 'throttle:api'])->group(function () {
         Route::get('candidate-exports/{export}', [AdminCandidateExportController::class, 'show']);
         Route::get('candidate-exports/{export}/download', [AdminCandidateExportController::class, 'download'])
             ->middleware('throttle:downloads');
+
+        // Employer management.
+        Route::get('employers', [AdminEmployerController::class, 'index']);
+        Route::get('employers/{employerProfile}', [AdminEmployerController::class, 'show']);
+        Route::post('employers/{employerProfile}/approve', [AdminEmployerController::class, 'approve']);
+        Route::post('employers/{employerProfile}/suspend', [AdminEmployerController::class, 'suspend']);
+
+        // Job management. Bind {jobPost:id} (FEAT-002 route-key decision).
+        Route::get('jobs', [AdminJobController::class, 'index']);
+        Route::post('jobs/{jobPost:id}/hide', [AdminJobController::class, 'hide']);
+        Route::post('jobs/{jobPost:id}/unhide', [AdminJobController::class, 'unhide']);
+        Route::post('jobs/{jobPost:id}/close', [AdminJobController::class, 'close']);
+
+        // Application management.
+        Route::get('applications', [AdminApplicationController::class, 'index']);
+        Route::patch('applications/{application}/status', [AdminApplicationController::class, 'updateStatus']);
+
+        // Lookup-list management: job categories, countries, education levels.
+        Route::post('lookups/job-categories', [AdminLookupController::class, 'storeJobCategory']);
+        Route::patch('lookups/job-categories/{jobCategory}', [AdminLookupController::class, 'updateJobCategory']);
+        Route::post('lookups/job-categories/{jobCategory}/toggle', [AdminLookupController::class, 'toggleJobCategory']);
+
+        Route::post('lookups/countries', [AdminLookupController::class, 'storeCountry']);
+        Route::post('lookups/countries/{country}/toggle', [AdminLookupController::class, 'toggleCountry']);
+
+        Route::post('lookups/education-levels', [AdminLookupController::class, 'storeEducationLevel']);
+        Route::patch('lookups/education-levels/reorder', [AdminLookupController::class, 'reorderEducationLevels']);
+        Route::patch('lookups/education-levels/{educationLevel}', [AdminLookupController::class, 'updateEducationLevel']);
     });
 
     Route::prefix('candidate')->middleware('role:candidate')->group(function () {

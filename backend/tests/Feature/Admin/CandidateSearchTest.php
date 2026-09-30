@@ -1,12 +1,14 @@
 <?php
 
 use App\Enums\DocumentType;
+use App\Models\Application;
 use App\Models\CandidateProfile;
 use App\Models\Country;
 use App\Models\District;
 use App\Models\Document;
 use App\Models\EducationLevel;
 use App\Models\JobCategory;
+use App\Models\JobPost;
 use App\Models\Language;
 use App\Models\Skill;
 use App\Models\State;
@@ -393,6 +395,48 @@ it('issues a bounded number of queries regardless of page size (no photo N+1)', 
     // pagination count + trade counts), NOT one-per-candidate. A regression to
     // the per-row photo exists() would push this well past the ceiling.
     expect($queryCount)->toBeLessThanOrEqual(12);
+});
+
+// ---------------------------------------------------------------------------
+// Applied-job filter
+// ---------------------------------------------------------------------------
+
+it('filters candidates by the job they applied to', function () {
+    $jobA = JobPost::factory()->create();
+    $jobB = JobPost::factory()->create();
+
+    $appliedToA = searchCandidate();
+    Application::factory()->create([
+        'job_post_id' => $jobA->id,
+        'candidate_profile_id' => $appliedToA->id,
+    ]);
+
+    $appliedToB = searchCandidate();
+    Application::factory()->create([
+        'job_post_id' => $jobB->id,
+        'candidate_profile_id' => $appliedToB->id,
+    ]);
+
+    // A candidate who applied to neither job.
+    searchCandidate();
+
+    $admin = User::factory()->admin()->create();
+
+    $forA = actingAsUser($admin)->getJson("/api/admin/candidates?applied_job_id={$jobA->id}")->assertOk();
+    expect(collect($forA->json('data'))->pluck('id')->all())->toBe([$appliedToA->id]);
+
+    $forB = actingAsUser($admin)->getJson("/api/admin/candidates?applied_job_id={$jobB->id}")->assertOk();
+    $idsB = collect($forB->json('data'))->pluck('id')->all();
+    expect($idsB)->toBe([$appliedToB->id])
+        ->and($idsB)->not->toContain($appliedToA->id);
+});
+
+it('rejects an applied_job_id that does not exist', function () {
+    $admin = User::factory()->admin()->create();
+
+    actingAsUser($admin)->getJson('/api/admin/candidates?applied_job_id=999999')
+        ->assertUnprocessable()
+        ->assertJsonValidationErrors('applied_job_id');
 });
 
 // ---------------------------------------------------------------------------

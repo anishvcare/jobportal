@@ -54,8 +54,8 @@ class SearchCandidatesRequest extends FormRequest
 
             'completeness_min' => ['nullable', 'integer', 'min:0', 'max:100'],
 
-            // NOTE(M5): an applied-job filter (applied_job_id) belongs here once
-            // the applications table exists. Omitted for now.
+            // Restrict to candidates who applied to a specific job post.
+            'applied_job_id' => ['nullable', 'integer', Rule::exists('job_posts', 'id')],
 
             'sort' => ['nullable', 'string', Rule::in(['name', 'age', 'experience', 'completeness', 'created_at'])],
             'direction' => ['nullable', 'string', Rule::in(['asc', 'desc'])],

@@ -89,8 +89,7 @@ class CandidateSearch
         $this->applyPassport($query, $filters['passport'] ?? null);
         $this->applyExperience($query, $filters['experience_min'] ?? null, $filters['experience_max'] ?? null);
         $this->applyCompleteness($query, $filters['completeness_min'] ?? null);
-
-        // TODO(M5): applied-job filter once the applications table exists.
+        $this->applyAppliedJob($query, $filters['applied_job_id'] ?? null);
 
         return $query;
     }
@@ -163,6 +162,21 @@ class CandidateSearch
         }
 
         $query->whereHas('preferredCategories', fn (Builder $q) => $q->whereKey($tradeId));
+    }
+
+    /**
+     * Restrict to candidates who have applied to a specific job post.
+     *
+     * A plain whereHas on the applications relation stays portable across
+     * SQLite and MySQL (correlated `exists (...)`, no raw SQL).
+     */
+    private function applyAppliedJob(Builder $query, ?int $jobPostId): void
+    {
+        if ($jobPostId === null) {
+            return;
+        }
+
+        $query->whereHas('applications', fn (Builder $q) => $q->where('job_post_id', $jobPostId));
     }
 
     /**
