@@ -21,8 +21,11 @@ class AppServiceProvider extends ServiceProvider
         // Surface N+1 queries and mass-assignment mistakes during development and tests.
         Model::shouldBeStrict(! $this->app->isProduction());
 
-        // Fail fast if a production deploy is running with insecure cookies.
-        if ($this->app->isProduction()) {
+        // Fail fast if a production web process is serving with insecure cookies.
+        // Skipped for console commands (artisan, package:discover, queue workers,
+        // deploy steps) which legitimately boot before .env/config is finalised
+        // and must not be broken by this guard.
+        if ($this->app->isProduction() && ! $this->app->runningInConsole()) {
             self::assertSecureSessionConfig();
         }
 
