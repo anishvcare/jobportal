@@ -7,6 +7,7 @@ import { JobStatusBadge } from "@/components/employer/StatusBadges";
 import { Alert } from "@/components/ui/Alert";
 import { Button } from "@/components/ui/Button";
 import { Card, PageHeader } from "@/components/ui/Card";
+import { ErrorState } from "@/components/ui/ErrorState";
 import { Field, Select, TextInput } from "@/components/ui/Field";
 import { PageLoader } from "@/components/ui/Spinner";
 import { closeAdminJob, hideAdminJob, unhideAdminJob, useAdminJobs } from "@/lib/admin";
@@ -92,7 +93,7 @@ export default function AdminJobsPage() {
       {actionError && <div className="mb-4"><Alert tone="error">{actionError}</Alert></div>}
 
       {error ? (
-        <Alert tone="error">{errorMessage(error)}</Alert>
+        <ErrorState error={error} onRetry={() => void mutate()} />
       ) : isLoading && jobs.length === 0 ? (
         <PageLoader label="Loading jobs…" />
       ) : jobs.length === 0 ? (

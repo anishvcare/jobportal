@@ -7,6 +7,7 @@ import { ApplicationStatusBadge } from "@/components/employer/StatusBadges";
 import { Alert } from "@/components/ui/Alert";
 import { Button, ButtonLink } from "@/components/ui/Button";
 import { Card, PageHeader } from "@/components/ui/Card";
+import { ErrorState } from "@/components/ui/ErrorState";
 import { Select } from "@/components/ui/Field";
 import { PageLoader } from "@/components/ui/Spinner";
 import {
@@ -72,7 +73,7 @@ export default function JobApplicantsPage({ params }: PageProps<"/employer/jobs/
       {actionError && <div className="mb-4"><Alert tone="error">{actionError}</Alert></div>}
 
       {error ? (
-        <Alert tone="error">{errorMessage(error)}</Alert>
+        <ErrorState error={error} onRetry={() => void mutate()} />
       ) : isLoading && applicants.length === 0 ? (
         <PageLoader label="Loading applicants…" />
       ) : applicants.length === 0 ? (

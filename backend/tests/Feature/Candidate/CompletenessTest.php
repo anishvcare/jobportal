@@ -1,6 +1,7 @@
 <?php
 
 use App\Models\User;
+use App\Services\Documents\PdfInspector;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
 
@@ -58,6 +59,14 @@ it('requires a passport document only when has_passport is true', function () {
 });
 
 it('sets pack_ready when a profile_pdf exists while individual docs remain missing', function () {
+    // Upload validation now fails CLOSED on the encrypted-PDF probe: a PDF is
+    // only accepted when qpdf confirms it is not encrypted. Fake PdfInspector so
+    // this test is deterministic and does not depend on qpdf being installed.
+    $this->mock(PdfInspector::class, function ($mock) {
+        $mock->shouldReceive('isEncrypted')->andReturn(false);
+        $mock->shouldReceive('pageCount')->andReturn(1);
+    });
+
     $user = User::factory()->candidate()->create();
 
     actingAsUser($user)->postJson('/api/candidate/documents', [

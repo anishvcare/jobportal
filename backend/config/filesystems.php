@@ -33,7 +33,9 @@ return [
         'local' => [
             'driver' => 'local',
             'root' => storage_path('app/private'),
-            'serve' => true,
+            // No route uses Storage::serve on the local disk; keep it off so a
+            // future misconfigured route cannot expose private files.
+            'serve' => false,
             'throw' => false,
             'report' => false,
         ],

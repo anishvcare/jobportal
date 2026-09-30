@@ -2,12 +2,11 @@
 
 import { useState } from "react";
 import { AdminNav } from "@/components/admin/AdminNav";
-import { Alert } from "@/components/ui/Alert";
 import { Card, PageHeader } from "@/components/ui/Card";
+import { ErrorState } from "@/components/ui/ErrorState";
 import { Field, Select } from "@/components/ui/Field";
 import { PageLoader } from "@/components/ui/Spinner";
 import { useDownloadAudits } from "@/lib/admin";
-import { errorMessage } from "@/lib/errors";
 import type { DownloadAuditKind } from "@/lib/types";
 
 const KIND_LABELS: Record<DownloadAuditKind, string> = {
@@ -27,7 +26,7 @@ export default function AdminAuditsPage() {
   const [kind, setKind] = useState<DownloadAuditKind | "">("");
   const [page, setPage] = useState(1);
 
-  const { audits, meta, isLoading, error } = useDownloadAudits({
+  const { audits, meta, isLoading, error, mutate } = useDownloadAudits({
     kind: kind || undefined,
     page,
     per_page: 20,
@@ -61,7 +60,7 @@ export default function AdminAuditsPage() {
       </div>
 
       {error ? (
-        <Alert tone="error">{errorMessage(error)}</Alert>
+        <ErrorState error={error} onRetry={() => void mutate()} />
       ) : isLoading && audits.length === 0 ? (
         <PageLoader label="Loading audit log…" />
       ) : audits.length === 0 ? (

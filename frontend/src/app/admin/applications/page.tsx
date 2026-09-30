@@ -6,6 +6,7 @@ import { AdminNav } from "@/components/admin/AdminNav";
 import { APPLICATION_STATUSES, ApplicationStatusBadge } from "@/components/employer/StatusBadges";
 import { Alert } from "@/components/ui/Alert";
 import { Card, PageHeader } from "@/components/ui/Card";
+import { ErrorState } from "@/components/ui/ErrorState";
 import { Field, Select } from "@/components/ui/Field";
 import { PageLoader } from "@/components/ui/Spinner";
 import { updateAdminApplicationStatus, useAdminApplications } from "@/lib/admin";
@@ -74,7 +75,7 @@ export default function AdminApplicationsPage() {
       {actionError && <div className="mb-4"><Alert tone="error">{actionError}</Alert></div>}
 
       {error ? (
-        <Alert tone="error">{errorMessage(error)}</Alert>
+        <ErrorState error={error} onRetry={() => void mutate()} />
       ) : isLoading && applications.length === 0 ? (
         <PageLoader label="Loading applications…" />
       ) : applications.length === 0 ? (

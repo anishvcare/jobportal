@@ -1,0 +1,13 @@
+; Sample PHP overrides for Nexus Flow (production).
+;
+; The largest accepted upload is a 50 MB Profile PDF, so PHP must accept a
+; request body at least that large. post_max_size must be >= upload_max_filesize
+; and leave headroom for other form fields. Reject oversize bodies at the edge
+; too: set the reverse proxy body limit to match, e.g. Nginx:
+;
+;     client_max_body_size 50M;
+;
+; Copy the relevant lines into your php.ini (or a conf.d/*.ini include).
+
+upload_max_filesize = 50M
+post_max_size = 51M

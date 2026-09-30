@@ -6,13 +6,12 @@ import { AdminNav } from "@/components/admin/AdminNav";
 import { AdminPhoto } from "@/components/admin/AdminPhoto";
 import { BulkExportBar } from "@/components/admin/BulkExportBar";
 import { CandidateFilters } from "@/components/admin/CandidateFilters";
-import { Alert } from "@/components/ui/Alert";
 import { Card, PageHeader } from "@/components/ui/Card";
+import { ErrorState } from "@/components/ui/ErrorState";
 import { Field, Select } from "@/components/ui/Field";
 import { PageLoader } from "@/components/ui/Spinner";
 import { useCandidateSearch, useLookups } from "@/lib/admin";
 import type { CandidateSearchParams } from "@/lib/admin";
-import { errorMessage } from "@/lib/errors";
 import type { CandidateSummary } from "@/lib/types";
 
 const SORTS: { value: NonNullable<CandidateSearchParams["sort"]>; label: string }[] = [
@@ -47,7 +46,7 @@ export default function AdminCandidatesPage() {
   const { lookups } = useLookups();
   const defaultCountryId = lookups?.countries[0]?.id ?? null;
 
-  const { results, meta, isLoading, error } = useCandidateSearch(filters);
+  const { results, meta, isLoading, error, mutate } = useCandidateSearch(filters);
 
   // Patch filters and reset to page 1 for anything other than a page change.
   function patch(next: Partial<CandidateSearchParams>) {
@@ -156,7 +155,7 @@ export default function AdminCandidatesPage() {
       </div>
 
       {error ? (
-        <Alert tone="error">{errorMessage(error)}</Alert>
+        <ErrorState error={error} onRetry={() => void mutate()} />
       ) : isLoading && results.length === 0 ? (
         <PageLoader label="Searching candidates…" />
       ) : results.length === 0 ? (

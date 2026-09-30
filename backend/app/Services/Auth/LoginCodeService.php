@@ -29,7 +29,9 @@ class LoginCodeService
     {
         $key = $this->key($code);
 
-        $lock = Cache::lock($key.':lock', 5);
+        // 10s comfortably covers the pull-and-User::find window even under a
+        // slow DB, while auto-expiring so a crashed request cannot deadlock.
+        $lock = Cache::lock($key.':lock', 10);
         if (! $lock->get()) {
             return null;
         }
