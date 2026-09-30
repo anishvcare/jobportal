@@ -20,6 +20,13 @@ You can start editing the page by modifying `app/page.tsx`. The page auto-update
 
 This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
 
+## Installing the app
+
+Nexus Flow is a Progressive Web App and can be installed to your home screen.
+
+- **Android / Chrome:** tap the in-app **Install app** button on the home page, or use the browser's **Install App** menu (⋮ → *Install app*).
+- **iOS / Safari:** tap the **Share** icon, then choose **Add to Home Screen**.
+
 ## Learn More
 
 To learn more about Next.js, take a look at the following resources:
