@@ -8,8 +8,10 @@
 // Design spec:
 //   - Solid teal background: #0f766e (brand-700).
 //   - Centered white "NF" wordmark.
-//   - Maskable icon keeps ~20% padding clear on every edge so the mark is
-//     never clipped by circular / rounded platform masks.
+//   - Maskable icon is full-bleed (square, edge-to-edge opaque teal) and keeps
+//     ~20% padding clear on every edge so the mark is never clipped by
+//     circular / rounded platform masks. The platform applies its own mask, so
+//     the icon itself must have no transparent corners.
 //   - apple-touch-icon is fully opaque (no transparency) per iOS requirements.
 //
 // Outputs (frontend/public/icons/):
@@ -73,9 +75,11 @@ async function main() {
   await renderPng(iconSvg(192, 1), 192, join(OUT_DIR, "icon-192.png"));
   await renderPng(iconSvg(512, 1), 512, join(OUT_DIR, "icon-512.png"));
 
-  // Maskable icon: keep ~20% padding clear on every edge, so the wordmark
-  // sits inside the central 60% safe zone.
-  await renderPng(iconSvg(512, 0.6, 96), 512, join(OUT_DIR, "maskable-512.png"));
+  // Maskable icon: full-bleed square background (radius 0) so the corners are
+  // opaque teal and the platform mask defines the silhouette. Keep ~20%
+  // padding clear on every edge, so the wordmark sits inside the central 60%
+  // safe zone.
+  await renderPng(iconSvg(512, 0.6, 0), 512, join(OUT_DIR, "maskable-512.png"));
 
   // iOS apple-touch-icon: opaque teal background, no transparency.
   await renderPng(iconSvg(180, 1), 180, join(OUT_DIR, "apple-touch-icon.png"), {
