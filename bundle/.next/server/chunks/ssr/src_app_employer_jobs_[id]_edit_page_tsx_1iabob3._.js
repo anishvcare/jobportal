@@ -1,0 +1,3 @@
+module.exports=[52307,a=>{"use strict";var b=a.i(87924),c=a.i(72131),d=a.i(24034),e=a.i(8696),f=a.i(31419),g=a.i(62067),h=a.i(5788),i=a.i(96063),j=a.i(74621);a.s(["default",0,function({params:a}){let{id:k}=(0,c.use)(a),l=Number(k),{job:m,isLoading:n,error:o}=(0,i.useEmployerJob)(Number.isFinite(l)?l:null);return(0,b.jsxs)(b.Fragment,{children:[(0,b.jsx)(d.EmployerNav,{}),(0,b.jsx)(g.PageHeader,{title:"Edit job",description:"Update the details of this job posting."}),o?(0,b.jsx)(f.Alert,{tone:"error",children:(0,j.errorMessage)(o)}):n||!m?(0,b.jsx)(h.PageLoader,{label:"Loading job…"}):(0,b.jsx)(e.JobForm,{job:m},m.id)]})}])}];
+
+//# sourceMappingURL=src_app_employer_jobs_%5Bid%5D_edit_page_tsx_1iabob3._.js.map
