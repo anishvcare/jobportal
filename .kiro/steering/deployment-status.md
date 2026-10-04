@@ -40,6 +40,26 @@ plan.
   **`deploy-frontend`** branch, not `main` (see "Why the frontend is built
   on GitHub" below).
 
+## STATUS: FULLY LIVE (both apps + Google sign-in working)
+
+As of this update the whole stack is live and verified:
+- Frontend `https://nexusflowservices.com` renders (home page, trades dropdown
+  populated from the live API).
+- Backend `https://api.nexusflowservices.com` serving.
+- Google sign-in works end to end for BOTH employer and candidate roles.
+
+The cPanel Node.js App was repointed (Application root `nexusflow-web`,
+startup file `app.js`, mode Production, Node 22) and restarted — the stale
+`amarizzjob-api/frontend` + `server.js` config is gone. Google OAuth client
+created in Google Cloud (redirect URI
+`https://api.nexusflowservices.com/auth/google/callback`); real
+`GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET` / `ADMIN_EMAILS` set in the
+server `backend/.env` and `php artisan config:cache` re-run.
+
+Remaining polish (not blockers): Google OAuth consent screen is in Testing
+mode (sign-in limited to added test users until published); fill in
+placeholder About/Contact/Privacy/Terms copy before public launch.
+
 ## Backend (API) — LIVE and verified working
 
 `api.nexusflowservices.com` document root is a symlink to
