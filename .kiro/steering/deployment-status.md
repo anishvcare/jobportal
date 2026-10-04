@@ -56,9 +56,27 @@ created in Google Cloud (redirect URI
 `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET` / `ADMIN_EMAILS` set in the
 server `backend/.env` and `php artisan config:cache` re-run.
 
-Remaining polish (not blockers): Google OAuth consent screen is in Testing
-mode (sign-in limited to added test users until published); fill in
-placeholder About/Contact/Privacy/Terms copy before public launch.
+Legal/info pages DONE (PR #12, merged to main as 947be21): /privacy, /terms,
+/about and /contact now have real, launch-ready copy (no placeholders) for
+the real entity **NexusFlow Services LLP**, Door No 13/227, Kakkoor, Piravom,
+Muvattupuzha, Ernakulam, Kerala, India 686662 — an overseas recruitment &
+MBBS admission portal (Russia, Israel, Vietnam, Uzbekistan). Contact email
+anishvcare@gmail.com. 18+ only. Privacy policy includes the Google user data /
+Limited Use section needed for OAuth publishing. The deploy-frontend bundle
+was rebuilt for 947be21 by GitHub Actions.
+
+Remaining to go live publicly:
+1. On the server: `cd ~/nexusflow-web && git fetch origin deploy-frontend &&
+   git reset --hard origin/deploy-frontend`, then Restart the cPanel Node app;
+   verify /privacy and /terms render the real copy.
+2. Google Auth Platform → Branding: set homepage
+   https://nexusflowservices.com, privacy https://nexusflowservices.com/privacy,
+   terms https://nexusflowservices.com/terms. Then Audience → Publish app
+   (basic scopes only → typically instant, no verification review). Until
+   published, sign-in is limited to added test users.
+
+Also note: GitHub flagged 3 pre-existing Dependabot vulns on main (1 high,
+1 moderate, 1 low) — unrelated to the legal pages; address separately.
 
 ## Backend (API) — LIVE and verified working
 
